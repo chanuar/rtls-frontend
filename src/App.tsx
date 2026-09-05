@@ -260,7 +260,7 @@ export default function App() {
                     mode={mode}
                     replayPath={mode === 'replay' ? trajectory : undefined}
                     replayMarker={mode === 'replay' ? replay.marker : null}
-                    replayProgressIndex={replay.marker?.index}
+                    replayTime={replay.cursor}
                     heat={showHeat ? heat : null}
                   />
                 </div>

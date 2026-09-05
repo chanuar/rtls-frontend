@@ -4,6 +4,11 @@ import type { Sample } from '../types'
 const MAX_GAP_S = 10 // huecos mayores no acumulan tiempo (tag dormido / sin cobertura)
 const GLITCH_M = 3 // saltos mayores entre muestras consecutivas se ignoran como ruido
 
+export function isContinuous(a: Sample, b: Sample): boolean {
+  const dt = (Date.parse(b.ts) - Date.parse(a.ts)) / 1000
+  return dt > 0 && dt <= MAX_GAP_S
+}
+
 export interface TrajectoryStats {
   distanceM: number
   stops: number
@@ -79,6 +84,7 @@ export function positionAt(samples: Sample[], tMs: number): { x: number; y: numb
   }
   const ta = new Date(samples[lo].ts).getTime()
   const tb = new Date(samples[hi].ts).getTime()
+  if (tMs !== ta && !isContinuous(samples[lo], samples[hi])) return null
   const f = tb === ta ? 0 : (tMs - ta) / (tb - ta)
   return {
     x: samples[lo].x + (samples[hi].x - samples[lo].x) * f,

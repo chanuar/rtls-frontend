@@ -19,10 +19,8 @@ export function useReplay(samples: Sample[]) {
   const lastTick = useRef<number>(0)
 
   useEffect(() => {
-    if (range) {
-      setCursor(range.start)
-      setPlaying(false)
-    }
+    setCursor(range?.start ?? 0)
+    setPlaying(false)
   }, [range])
 
   useEffect(() => {
@@ -70,6 +68,7 @@ export function ReplayBar({ replay }: BarProps) {
         {playing ? '❚❚' : '▶'}
       </button>
       <span className="font-mono text-[11px] text-muted tabular-nums">{fmt(cursor)}</span>
+      {!replay.marker && <span className="text-[11px] text-warn">Sin datos en este intervalo</span>}
       <input
         type="range"
         aria-label="Posición temporal"

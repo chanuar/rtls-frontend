@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ENTRANCE, FLOOR, TEST_LAYOUT, ZONES, qualityLevel, tagColor } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample } from '../types'
+import { isContinuous } from '../lib/trajectory'
 
 const SCALE = 64 // px por metro
 const MARGIN = 0.7 // metros de margen alrededor de los anchors
@@ -15,7 +16,7 @@ interface Props {
   mode: 'live' | 'replay'
   replayPath?: Sample[]
   replayMarker?: { x: number; y: number } | null
-  replayProgressIndex?: number
+  replayTime?: number
   heat?: { cell: number; bins: HeatBin[] } | null
 }
 
@@ -63,6 +64,8 @@ export function FloorPlan(p: Props) {
   )
 
   const trailsToDraw = p.mode === 'live' ? p.trails : {}
+  const pathData = (samples: Sample[]) => samples.map((s, i) =>
+    `${i && isContinuous(samples[i - 1], s) ? 'L' : 'M'} ${X(s.x)} ${Y(s.y)}`).join(' ')
 
   return (
     <svg
@@ -167,17 +170,14 @@ export function FloorPlan(p: Props) {
       {/* Trayectoria del replay */}
       {p.mode === 'replay' && p.replayPath && p.replayPath.length > 1 && (
         <>
-          <polyline
-            points={p.replayPath.map((s) => `${X(s.x)},${Y(s.y)}`).join(' ')}
+          <path
+            d={pathData(p.replayPath)}
             fill="none"
             stroke="rgba(148,163,184,0.18)"
             strokeWidth={1.5}
           />
-          <polyline
-            points={p.replayPath
-              .slice(0, (p.replayProgressIndex ?? 0) + 1)
-              .map((s) => `${X(s.x)},${Y(s.y)}`)
-              .join(' ')}
+          <path
+            d={pathData(p.replayPath.filter(s => Date.parse(s.ts) <= (p.replayTime ?? 0)))}
             fill="none"
             stroke="#00d4ff"
             strokeWidth={2}
@@ -210,7 +210,7 @@ export function FloorPlan(p: Props) {
       {/* Estelas en vivo */}
       {Object.entries(trailsToDraw).map(([tag, trail]) => {
         const color = tagColor(tag, p.tagIds)
-        return trail.slice(1).map((s, i) => (
+        return trail.slice(1).map((s, i) => isContinuous(trail[i], s) && (
           <line
             key={`${tag}-${i}`}
             x1={X(trail[i].x)}
