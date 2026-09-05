@@ -50,7 +50,13 @@ export const useStore = create<Store>((set, get) => ({
   select: (tag) => set({ selectedTag: tag }),
 
   _apply: (p) => {
+    if (!p || typeof p.tag !== 'string' || !p.tag.trim() ||
+        typeof p.ts !== 'string' || !Number.isFinite(Date.parse(p.ts)) ||
+        !Number.isFinite(p.x) || !Number.isFinite(p.y) ||
+        !Number.isFinite(p.quality) || p.quality < 0 ||
+        !Number.isInteger(p.n_anchors) || p.n_anchors < 3) return
     set((s) => {
+      if (s.live[p.tag] && Date.parse(p.ts) <= Date.parse(s.live[p.tag].ts)) return s
       const trail = [...(s.trails[p.tag] ?? []), { ts: p.ts, x: p.x, y: p.y, quality: p.quality, n_anchors: p.n_anchors }]
       if (trail.length > TRAIL_LENGTH) trail.splice(0, trail.length - TRAIL_LENGTH)
       const tags = s.tags.some((t) => t.id === p.tag)
@@ -81,7 +87,7 @@ function connectWs(get: () => Store) {
   ws.onmessage = (ev) => {
     try {
       const p = JSON.parse(ev.data as string) as LivePosition
-      if (p && typeof p.x === 'number' && typeof p.y === 'number') get()._apply(p)
+      get()._apply(p)
     } catch {
       /* mensaje no JSON — ignorar */
     }
