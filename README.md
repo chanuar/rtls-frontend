@@ -15,6 +15,26 @@ Por defecto apunta a `http://localhost:8000`. Para otro backend, copia `.env.exa
 
 ## Funcionalidades
 
+Las posiciones en vivo caducan a los 10 segundos y se ocultan al desconectarse;
+un WebSocket conectado sin medidas recientes no se presenta como seguimiento
+activo. Los anchors se actualizan cada 5 segundos y al reconectar; un cambio de
+coordenadas borra las posiciones y estelas del sistema anterior.
+
+Los resultados históricos pertenecen al tag y periodo solicitados. Cambiar la
+selección oculta esos resultados y descarta respuestas pendientes anteriores.
+El replay deja huecos cuando hay más de 10 segundos sin medidas, en lugar de
+inventar el recorrido. Distancia, replay y coincidencias excluyen saltos por
+encima de 3 m/s más 0,4 m de tolerancia; es una heurística para personas andando.
+Las coincidencias usan intervalos solapados con medidas próximas en la misma
+zona, y no afirman comparar contra un patrón habitual del empleado.
+
+Comprobaciones locales (sin backend ni nuevas dependencias):
+
+```bash
+npm test
+npm run build
+```
+
 - **En vivo:** plano SVG con posiciones por WebSocket (reconexión automática), estelas de movimiento con desvanecimiento, anillo de calidad por tag (verde/ámbar/rojo según el residuo RMS de la trilateración), zona actual y últimas coordenadas del empleado seleccionado.
 - **Reproducción:** carga la trayectoria de un empleado en un periodo, la reproduce con interpolación suave (×1, ×4, ×16, ×60), scrubber temporal, y calcula estadísticas: distancia recorrida, paradas (≥30 s quieto) y tiempo por zona.
 - **Mapa de calor:** capa superpuesta generada desde el endpoint `/heatmap` (rejilla de 0,5 m), con escala cian → rojo.

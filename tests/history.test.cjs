@@ -54,6 +54,9 @@ test('history follows the selected tag and ignores a request completed after sel
   function loadHistory(tree) {
     return find(tree, n => n.type === 'button' && n.props.children === 'Cargar jornada').props.onClick()
   }
+  find(render(), n => n.type?.name === 'PeriodPicker').props.onChange({
+    start: new Date('2026-09-05T08:00:00Z'), end: new Date('2026-09-05T21:00:00Z'),
+  })
   // An old T0 response must not populate T1.
   loadHistory(render())
   store.selectedTag = 'T1'
@@ -68,6 +71,11 @@ test('history follows the selected tag and ignores a request completed after sel
   await new Promise(done => setImmediate(done))
   render()
   assert.equal(trajectory.length, 1)
+  find(render(), n => n.type?.name === 'PeriodPicker').props.onChange({
+    start: new Date('2026-09-04T08:00:00Z'), end: new Date('2026-09-04T21:00:00Z'),
+  })
+  render()
+  assert.equal(trajectory.length, 0)
   store.selectedTag = 'T0'
   render()
   assert.equal(trajectory.length, 0)
