@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { TEST_LAYOUT, tagColor } from './config'
+import { TEST_LAYOUT, isFresh, tagColor } from './config'
 import { fetchHeatmap, fetchPositions } from './lib/api'
 import { demoHeatmap, demoTrajectory } from './lib/demo'
 import { analyzeTrajectory } from './lib/trajectory'
@@ -24,6 +24,14 @@ export default function App() {
   const [page, setPage] = useState<Page>('plan')
   const [mode, setMode] = useState<Mode>('live')
   const [showHeat, setShowHeat] = useState(false)
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const freshLive = Object.fromEntries(Object.entries(live).filter(([, p]) =>
+    (status === 'online' || status === 'demo') && isFresh(p, now)))
+  const freshTrails = Object.fromEntries(Object.entries(trails).filter(([tag]) => tag in freshLive))
 
   const [period, setPeriod] = useState<Period>(() => {
     const start = new Date()
@@ -70,8 +78,9 @@ export default function App() {
     }
   }
 
-  const st = STATUS[status]
-  const selectedLive = selectedTag ? (live[selectedTag] ?? null) : null
+  const st = status === 'online' && !Object.keys(freshLive).length
+    ? { label: 'CONECTADO · SIN POSICIONES RECIENTES', dot: 'bg-warn' } : STATUS[status]
+  const selectedLive = selectedTag ? (freshLive[selectedTag] ?? null) : null
 
   return (
     <div className="flex h-full flex-col">
@@ -161,7 +170,7 @@ export default function App() {
                       <span className="block truncate text-[12px]">{t.employee ?? t.id}</span>
                       <span className="block font-mono text-[10px] text-muted">{t.id}</span>
                     </span>
-                    {live[t.id] && <span className="h-1.5 w-1.5 rounded-full bg-ok" />}
+                    {freshLive[t.id] && <span className="h-1.5 w-1.5 rounded-full bg-ok" />}
                   </button>
                 )
               })}
@@ -229,8 +238,8 @@ export default function App() {
                 <div className="flex h-full items-center rounded-lg border border-line bg-panel p-2">
                   <FloorPlan
                     anchors={anchors}
-                    live={live}
-                    trails={trails}
+                    live={freshLive}
+                    trails={freshTrails}
                     tagIds={tagIds}
                     selectedTag={selectedTag}
                     onSelect={select}

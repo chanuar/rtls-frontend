@@ -3,6 +3,14 @@ const assert = require('node:assert/strict')
 const { load } = require('./load.cjs')
 const position = { tag: 'T0', ts: '2026-09-05T12:00:00Z', x: 1, y: 2, quality: 0.1, n_anchors: 4 }
 
+test('freshness expires without incoming messages and rejects future timestamps', () => {
+  const { isFresh } = load('src/config.ts')
+  const now = Date.parse(position.ts)
+  assert.equal(isFresh(position, now), true)
+  assert.equal(isFresh(position, now + 10001), false)
+  assert.equal(isFresh(position, now - 1000), false)
+})
+
 function runtime(api = {}) {
   const intervals = new Map(), timeouts = new Map(), sockets = []
   let id = 0

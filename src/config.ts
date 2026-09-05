@@ -1,4 +1,4 @@
-import type { Zone } from './types'
+import type { LivePosition, Zone } from './types'
 
 export const API_URL: string =
   (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000'
@@ -7,6 +7,11 @@ export const WS_URL = API_URL.replace(/^http/, 'ws') + '/ws/positions'
 
 export const TEST_LAYOUT = import.meta.env.VITE_TEST_LAYOUT === 'true'
 export const DEMO_MODE = import.meta.env.VITE_DEMO === 'true'
+
+export function isFresh(position: LivePosition, now: number): boolean {
+  const age = now - Date.parse(position.ts)
+  return age >= 0 && age <= 10000
+}
 
 /**
  * Geometría del local real (~152,75 m², planta alargada).

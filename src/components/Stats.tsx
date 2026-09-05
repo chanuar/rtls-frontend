@@ -7,7 +7,7 @@ const Q_CLASS = { ok: 'text-ok', warn: 'text-warn', bad: 'text-danger' } as cons
 
 export function LiveInfo({ pos }: { pos: LivePosition | null }) {
   if (!pos) {
-    return <p className="text-muted">Sin datos en vivo todavía. Las posiciones aparecerán al recibir la primera medida.</p>
+    return <p className="text-muted">Sin posición reciente. Esperando una medida válida; las posiciones caducan a los 10 segundos.</p>
   }
   const q = qualityLevel(pos.quality)
   const zone = zoneAt(pos.x, pos.y)
