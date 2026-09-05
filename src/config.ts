@@ -6,6 +6,7 @@ export const API_URL: string =
 export const WS_URL = API_URL.replace(/^http/, 'ws') + '/ws/positions'
 
 export const TEST_LAYOUT = import.meta.env.VITE_TEST_LAYOUT === 'true'
+export const DEMO_MODE = import.meta.env.VITE_DEMO === 'true'
 
 /**
  * Geometría del local real (~152,75 m², planta alargada).

@@ -2,7 +2,7 @@ import { API_URL } from '../config'
 import type { Anchor, Heatmap, Sample, TagInfo } from '../types'
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`)
+  const res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(15000) })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} en ${path}`)
   return res.json() as Promise<T>
 }

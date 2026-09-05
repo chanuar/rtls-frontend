@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { fetchAnchors, fetchTags } from './lib/api'
 import { DEMO_ANCHORS, DEMO_TAGS, startDemoLive } from './lib/demo'
-import { WS_URL } from './config'
+import { DEMO_MODE, WS_URL } from './config'
 import type { Anchor, ConnectionStatus, LivePosition, Sample, TagInfo } from './types'
 
 const TRAIL_LENGTH = 40
@@ -36,6 +36,12 @@ export const useStore = create<Store>((set, get) => ({
   init: async () => {
     get().stop()
     const current = generation
+    set({ status: 'connecting' })
+    if (DEMO_MODE) {
+      set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
+      stopDemo = startDemoLive((p) => get()._apply(p))
+      return
+    }
     try {
       const [anchors, tags] = await Promise.all([fetchAnchors(), fetchTags()])
       if (current !== generation) return
@@ -47,10 +53,7 @@ export const useStore = create<Store>((set, get) => ({
       connectWs(get)
     } catch {
       if (current !== generation) return
-      // API no disponible → modo demo con datos simulados en el cliente
-      set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
-      stopDemo?.()
-      stopDemo = startDemoLive((p) => get()._apply(p))
+      reconnectTimer = window.setTimeout(() => void get().init(), 2000)
     }
   },
 

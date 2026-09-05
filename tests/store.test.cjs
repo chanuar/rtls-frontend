@@ -55,3 +55,19 @@ test('reject malformed and older positions before updating the store', () => {
   assert.equal(useStore.getState().live.T0.x, 1)
   assert.equal(useStore.getState().trails.T0.length, 1)
 })
+
+test('startup failure retries the backend without manufacturing demo positions', async () => {
+  let fail = true
+  const r = runtime({ fetchAnchors: async () => { if (fail) throw Error('offline'); return [] } })
+  await r.useStore.getState().init()
+  assert.equal(r.useStore.getState().status, 'connecting')
+  assert.equal(r.useStore.getState().tags.length, 0)
+  assert.equal(r.intervals.size, 0)
+  assert.equal(r.timeouts.size, 1)
+  fail = false
+  await r.useStore.getState().init()
+  assert.equal(r.sockets.length, 1)
+  r.sockets[0].onopen()
+  assert.equal(r.useStore.getState().status, 'online')
+  r.useStore.getState().stop()
+})

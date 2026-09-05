@@ -11,7 +11,7 @@ npm run dev          # http://localhost:5173
 
 Por defecto apunta a `http://localhost:8000`. Para otro backend, copia `.env.example` a `.env` y ajusta `VITE_API_URL`.
 
-**Modo demo:** si la API no responde al arrancar, la interfaz pasa automáticamente a modo DEMO (badge ámbar en la cabecera) y genera empleados simulados en el propio navegador — útil para enseñar el producto sin infraestructura. Con el backend y `tools/simulator.py` corriendo verás el badge verde EN VIVO con datos reales del pipeline completo.
+**Modo demo:** solo se activa con `VITE_DEMO=true` en `.env` (reiniciar Vite después de cambiarlo). Muestra el badge ámbar DEMO y empleados simulados. Por defecto se conecta al backend y reintenta si no está disponible; un fallo de conexión nunca activa datos simulados.
 
 ## Funcionalidades
 
