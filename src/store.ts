@@ -14,6 +14,7 @@ interface Store {
   trails: Record<string, Sample[]>
   selectedTag: string | null
   init: () => Promise<void>
+  stop: () => void
   select: (tag: string) => void
   _apply: (p: LivePosition) => void
 }
@@ -21,6 +22,8 @@ interface Store {
 let stopDemo: (() => void) | null = null
 let ws: WebSocket | null = null
 let reconnectTimer: number | null = null
+let keepaliveTimer: number | null = null
+let generation = 0
 
 export const useStore = create<Store>((set, get) => ({
   status: 'connecting',
@@ -31,8 +34,11 @@ export const useStore = create<Store>((set, get) => ({
   selectedTag: null,
 
   init: async () => {
+    get().stop()
+    const current = generation
     try {
       const [anchors, tags] = await Promise.all([fetchAnchors(), fetchTags()])
+      if (current !== generation) return
       set({
         anchors,
         tags: tags.length ? tags : inferTagsLater(),
@@ -40,11 +46,19 @@ export const useStore = create<Store>((set, get) => ({
       })
       connectWs(get)
     } catch {
+      if (current !== generation) return
       // API no disponible → modo demo con datos simulados en el cliente
       set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
       stopDemo?.()
       stopDemo = startDemoLive((p) => get()._apply(p))
     }
+  },
+
+  stop: () => {
+    generation++
+    disconnectSocket()
+    stopDemo?.()
+    stopDemo = null
   },
 
   select: (tag) => set({ selectedTag: tag }),
@@ -78,8 +92,9 @@ function inferTagsLater(): TagInfo[] {
 }
 
 function connectWs(get: () => Store) {
-  ws?.close()
-  ws = new WebSocket(WS_URL)
+  disconnectSocket()
+  const socket = new WebSocket(WS_URL)
+  ws = socket
 
   ws.onopen = () => {
     useStore.setState({ status: 'online' })
@@ -93,14 +108,27 @@ function connectWs(get: () => Store) {
     }
   }
   ws.onclose = () => {
+    if (socket !== ws) return
+    disconnectSocket()
     useStore.setState({ status: 'connecting' })
     if (reconnectTimer) window.clearTimeout(reconnectTimer)
     reconnectTimer = window.setTimeout(() => connectWs(get), 2000)
   }
-  ws.onerror = () => ws?.close()
+  ws.onerror = () => socket.close()
 
   // keepalive para proxies intermedios
-  window.setInterval(() => {
-    if (ws?.readyState === WebSocket.OPEN) ws.send('ping')
+  keepaliveTimer = window.setInterval(() => {
+    if (socket.readyState === WebSocket.OPEN) socket.send('ping')
   }, 30000)
+}
+
+function disconnectSocket() {
+  if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
+  if (keepaliveTimer !== null) window.clearInterval(keepaliveTimer)
+  reconnectTimer = keepaliveTimer = null
+  if (ws) {
+    ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null
+    ws.close()
+    ws = null
+  }
 }

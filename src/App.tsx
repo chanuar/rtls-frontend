@@ -38,6 +38,7 @@ export default function App() {
 
   useEffect(() => {
     void init()
+    return () => useStore.getState().stop()
   }, [init])
 
   const tagIds = useMemo(() => tags.map((t) => t.id), [tags])
