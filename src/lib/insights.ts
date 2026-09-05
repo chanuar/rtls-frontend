@@ -11,7 +11,7 @@
  * no contra umbrales fijos.
  */
 import { zoneName } from '../config'
-import { analyzeTrajectory, fmtDuration } from './trajectory'
+import { analyzeTrajectory, fmtDuration, isContinuous } from './trajectory'
 import { zoneAt } from '../config'
 import type { Sample, TagInfo } from '../types'
 
@@ -91,13 +91,17 @@ export function generateInsights(
     }
   }
 
-  // 4 · Coincidencias entre empleados (misma zona, mismo minuto)
-  const timelines = new Map<string, Map<number, string>>()
+  // ponytail: infer zone occupancy only between nearby samples in the same zone;
+  // measured zone transitions would be needed to account for boundary crossings.
+  const timelines = new Map<string, { start: number; end: number; zone: string }[]>()
   for (const [tag, samples] of entries) {
-    const tl = new Map<number, string>()
-    for (const s of samples) {
-      const z = zoneAt(s.x, s.y)
-      if (z) tl.set(Math.floor(new Date(s.ts).getTime() / 60000), z.id)
+    const tl = []
+    for (let k = 1; k < samples.length; k++) {
+      const a = samples[k - 1], b = samples[k]
+      const zone = zoneAt(a.x, a.y)
+      if (isContinuous(a, b) && zone && zone.id === zoneAt(b.x, b.y)?.id) {
+        tl.push({ start: Date.parse(a.ts), end: Date.parse(b.ts), zone: zone.id })
+      }
     }
     timelines.set(tag, tl)
   }
@@ -106,30 +110,32 @@ export function generateInsights(
     for (let j = i + 1; j < tagList.length; j++) {
       const a = timelines.get(tagList[i])!
       const b = timelines.get(tagList[j])!
-      let together = 0
+      let togetherS = 0
       let common = 0
       const byZone = new Map<string, number>()
-      for (const [minute, za] of a) {
-        const zb = b.get(minute)
-        if (zb === undefined) continue
-        common++
-        if (za === zb) {
-          together++
-          byZone.set(za, (byZone.get(za) ?? 0) + 1)
+      let ai = 0, bi = 0
+      while (ai < a.length && bi < b.length) {
+        const aa = a[ai], bb = b[bi]
+        const seconds = Math.max(0, Math.min(aa.end, bb.end) - Math.max(aa.start, bb.start)) / 1000
+        common += seconds
+        if (aa.zone === bb.zone) {
+          togetherS += seconds
+          if (seconds > 0) byZone.set(aa.zone, (byZone.get(aa.zone) ?? 0) + seconds)
         }
+        if (aa.end <= bb.end) ai++
+        else bi++
       }
-      const togetherS = together * 60
       if (
         common > 0 &&
-        (togetherS >= COPRESENCE_MIN_S || together / common >= COPRESENCE_SHARE) &&
+        (togetherS >= COPRESENCE_MIN_S || togetherS / common >= COPRESENCE_SHARE) &&
         togetherS >= 20 * 60
       ) {
         const topZone = [...byZone.entries()].sort((x, y) => y[1] - x[1])[0]
         out.push({
           id: `co-${tagList[i]}-${tagList[j]}`,
           severity: 'info',
-          title: `${name(tagList[i])} y ${name(tagList[j])} han coincidido más de lo habitual`,
-          detail: `${fmtDuration(togetherS)} en la misma zona (sobre todo en ${zoneName(topZone[0])}) — el ${Math.round((together / common) * 100)} % del tiempo en que ambos tenían señal.`,
+          title: `${name(tagList[i])} y ${name(tagList[j])} coinciden en la misma zona`,
+          detail: `${fmtDuration(togetherS)} estimados en la misma zona (sobre todo en ${zoneName(topZone[0])}) — el ${Math.round((togetherS / common) * 100)} % de los intervalos con zona observada para ambos. Sin comparación con un historial habitual.`,
           tags: [tagList[i], tagList[j]],
           zone: topZone[0],
         })
