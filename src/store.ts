@@ -23,6 +23,7 @@ let stopDemo: (() => void) | null = null
 let ws: WebSocket | null = null
 let reconnectTimer: number | null = null
 let keepaliveTimer: number | null = null
+let anchorTimer: number | null = null
 let generation = 0
 
 export const useStore = create<Store>((set, get) => ({
@@ -101,7 +102,26 @@ function connectWs(get: () => Store) {
 
   ws.onopen = () => {
     useStore.setState({ status: 'online' })
+    void refreshAnchors()
   }
+  let refreshing = false
+  async function refreshAnchors() {
+    if (refreshing) return
+    refreshing = true
+    try {
+      const anchors = await fetchAnchors()
+      if (ws !== socket) return
+      const previous = get().anchors
+      const changed = anchors.length !== previous.length || anchors.some(a =>
+        !previous.some(b => a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z))
+      useStore.setState(changed ? { anchors, live: {}, trails: {} } : { anchors })
+    } catch {
+      // Keep the last map during an API outage; retry at the next interval.
+    } finally {
+      refreshing = false
+    }
+  }
+  anchorTimer = window.setInterval(() => void refreshAnchors(), 5000)
   ws.onmessage = (ev) => {
     try {
       const p = JSON.parse(ev.data as string) as LivePosition
@@ -128,6 +148,8 @@ function connectWs(get: () => Store) {
 function disconnectSocket() {
   if (reconnectTimer !== null) window.clearTimeout(reconnectTimer)
   if (keepaliveTimer !== null) window.clearInterval(keepaliveTimer)
+  if (anchorTimer !== null) window.clearInterval(anchorTimer)
+  anchorTimer = null
   reconnectTimer = keepaliveTimer = null
   if (ws) {
     ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null

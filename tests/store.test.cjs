@@ -79,3 +79,18 @@ test('startup failure retries the backend without manufacturing demo positions',
   assert.equal(r.useStore.getState().status, 'online')
   r.useStore.getState().stop()
 })
+
+test('anchor refresh applies calibration and clears positions in the old coordinate frame', async () => {
+  let anchors = [{ id: 'A0', x: 0, y: 0, z: 3 }]
+  const r = runtime({ fetchAnchors: async () => anchors })
+  await r.useStore.getState().init()
+  r.useStore.getState()._apply(position)
+  anchors = [{ id: 'A0', x: 1, y: 0, z: 3 }]
+  const refresh = [...r.intervals.values()].find(t => t.ms === 5000).fn
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().anchors[0].x, 1)
+  assert.equal(Object.keys(r.useStore.getState().live).length, 0)
+  r.useStore.getState().stop()
+  assert.equal(r.intervals.size, 0)
+})
