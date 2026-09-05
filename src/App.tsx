@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TEST_LAYOUT, isFresh, tagColor } from './config'
 import { fetchHeatmap, fetchPositions } from './lib/api'
 import { demoHeatmap, demoTrajectory } from './lib/demo'
@@ -18,6 +18,7 @@ const STATUS = {
 } as const
 
 type Page = 'plan' | 'insights'
+const EMPTY_SAMPLES: Sample[] = []
 
 export default function App() {
   const { status, anchors, tags, live, trails, selectedTag, init, select } = useStore()
@@ -39,10 +40,18 @@ export default function App() {
     return { start, end: new Date() }
   })
 
-  const [trajectory, setTrajectory] = useState<Sample[]>([])
-  const [heat, setHeat] = useState<Heatmap | null>(null)
+  const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), status === 'demo'])
+  const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[]; heat: Heatmap } | null>(null)
+  const trajectory = loaded?.key === queryKey ? loaded.trajectory : EMPTY_SAMPLES
+  const heat = loaded?.key === queryKey ? loaded.heat : null
+  const request = useRef(0)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  useEffect(() => {
+    setLoading(false)
+    setLoadError(null)
+    return () => { request.current++ }
+  }, [queryKey])
 
   useEffect(() => {
     void init()
@@ -55,26 +64,31 @@ export default function App() {
 
   async function loadRange() {
     if (!selectedTag) return
+    if (period.end <= period.start) {
+      setLoadError('El final debe ser posterior al inicio.')
+      return
+    }
+    const id = ++request.current
     setLoading(true)
     setLoadError(null)
+    setLoaded(null)
     try {
       if (status === 'demo') {
         const traj = demoTrajectory(selectedTag, period.start, period.end)
-        setTrajectory(traj)
-        setHeat({ cell: 0.5, bins: demoHeatmap(traj, 0.5) })
+        setLoaded({ key: queryKey, trajectory: traj, heat: { cell: 0.5, bins: demoHeatmap(traj, 0.5) } })
       } else {
         const [traj, hm] = await Promise.all([
           fetchPositions(selectedTag, period.start, period.end),
           fetchHeatmap(period.start, period.end, 0.5, selectedTag),
         ])
-        setTrajectory(traj)
-        setHeat(hm)
+        if (id !== request.current) return
+        setLoaded({ key: queryKey, trajectory: traj, heat: hm })
         if (traj.length === 0) setLoadError('No hay posiciones en ese periodo. Prueba otro o arranca el simulador.')
       }
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Error al cargar los datos')
+      if (id === request.current) setLoadError(err instanceof Error ? err.message : 'Error al cargar los datos')
     } finally {
-      setLoading(false)
+      if (id === request.current) setLoading(false)
     }
   }
 
@@ -259,7 +273,8 @@ export default function App() {
               )}
             </>
           ) : (
-            <InsightsPage status={status} tags={tags} tagIds={tagIds} period={period} />
+            <InsightsPage key={JSON.stringify([period.start.getTime(), period.end.getTime(), status === 'demo', tagIds])}
+              status={status} tags={tags} tagIds={tagIds} period={period} />
           )}
         </main>
       </div>

@@ -19,8 +19,13 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   async function analyze() {
+    if (period.end <= period.start) {
+      setError('El final debe ser posterior al inicio.')
+      return
+    }
     setLoading(true)
     setError(null)
+    setInsights(null)
     try {
       const data: Record<string, Sample[]> = {}
       if (status === 'demo') {
