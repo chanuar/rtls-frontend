@@ -31,10 +31,10 @@ export function generateInsights(
 
   for (const [tag, samples] of entries) {
     const stats = analyzeTrajectory(samples)
-    if (stats.durationS < MIN_PERIOD_S || stats.perZoneS.length === 0) continue
+    if (stats.durationS < MIN_PERIOD_S) continue
     const top = stats.perZoneS[0]
-    const share = top.seconds / stats.durationS
-    if (share >= DWELL_INFO) {
+    const share = top ? top.seconds / stats.durationS : 0
+    if (top && share >= DWELL_INFO) {
       out.push({
         id: `dwell-${tag}`,
         severity: share >= DWELL_WARN ? 'warn' : 'info',
@@ -50,7 +50,7 @@ export function generateInsights(
       out.push({
         id: `low-${tag}`,
         severity: 'info',
-        title: `Actividad baja de ${name(tag)}`,
+        title: `Poco movimiento registrado de ${name(tag)}`,
         detail: `Solo ${stats.distanceM.toFixed(0)} m recorridos en ${fmtDuration(stats.durationS)} (${(stats.distanceM / hours).toFixed(0)} m/h).`,
         tags: [tag],
       })
