@@ -1,4 +1,3 @@
-// Run the real TypeScript modules with Node's test runner; no test dependency.
 const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')

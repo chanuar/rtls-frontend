@@ -71,7 +71,6 @@ export function analyzeTrajectory(samples: Sample[]): TrajectoryStats {
   }
 }
 
-/** Posición interpolada en el instante tMs (para replay suave). */
 export function positionAt(samples: Sample[], tMs: number): { x: number; y: number; index: number } | null {
   if (!samples.length) return null
   const first = new Date(samples[0].ts).getTime()

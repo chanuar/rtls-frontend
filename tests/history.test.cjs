@@ -3,7 +3,6 @@ const assert = require('node:assert/strict')
 const { load } = require('./load.cjs')
 
 test('history follows the selected tag and ignores a request completed after selection changes', async () => {
-  // Execute App's hooks with controlled renders and deferred API responses.
   const slots = [], pending = []
   let cursor = 0, trajectory
   const react = {
@@ -57,7 +56,6 @@ test('history follows the selected tag and ignores a request completed after sel
   find(render(), n => n.type?.name === 'PeriodPicker').props.onChange({
     start: new Date('2026-09-05T08:00:00Z'), end: new Date('2026-09-05T21:00:00Z'),
   })
-  // An old T0 response must not populate T1.
   loadHistory(render())
   store.selectedTag = 'T1'
   render()
@@ -65,7 +63,6 @@ test('history follows the selected tag and ignores a request completed after sel
   await new Promise(done => setImmediate(done))
   render()
   assert.equal(trajectory.length, 0)
-  // A successful T1 load disappears immediately when selecting T0.
   loadHistory(render())
   resolve([{ ts: '2026-09-05T12:00:00Z', x: 1, y: 2 }])
   await new Promise(done => setImmediate(done))

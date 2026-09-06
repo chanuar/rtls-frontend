@@ -39,7 +39,6 @@ export function PeriodPicker({ value, onChange }: Props) {
     d.setDate(1)
     return d
   })
-  // Rango de días en selección (el segundo clic cierra el rango)
   const [picking, setPicking] = useState<Date | null>(null)
 
   const dayStart = startOfDay(value.start)
@@ -106,7 +105,6 @@ export function PeriodPicker({ value, onChange }: Props) {
 
   return (
     <div className="rounded-lg border border-line bg-panel p-3">
-      {/* Presets */}
       <div className="mb-3 flex gap-1">
         {(
           [
@@ -125,7 +123,6 @@ export function PeriodPicker({ value, onChange }: Props) {
         ))}
       </div>
 
-      {/* Cabecera del mes */}
       <div className="mb-2 flex items-center justify-between">
         <button
           aria-label="Mes anterior"
@@ -144,7 +141,6 @@ export function PeriodPicker({ value, onChange }: Props) {
         </button>
       </div>
 
-      {/* Rejilla */}
       <div className="grid grid-cols-7 gap-y-0.5 text-center">
         {WEEKDAYS.map((d, i) => (
           <span key={d + i} className="pb-1 text-[10px] font-medium text-muted">
@@ -182,7 +178,6 @@ export function PeriodPicker({ value, onChange }: Props) {
         <p className="mt-1.5 text-[10px] text-accent">Elige el día final del rango…</p>
       )}
 
-      {/* Horas */}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1 text-[10px] uppercase tracking-widest text-muted">
           Desde

@@ -1,9 +1,3 @@
-/**
- * Modo demo: cuando la API no responde, el frontend genera datos simulados
- * con la misma lógica que tools/simulator.py del backend, adaptada a la
- * planta real. Cada empleado demo tiene una zona "habitual" donde pasa la
- * mayor parte del tiempo, para que las recomendaciones de IA tengan material.
- */
 import { DEMO_HOME_ZONES, FLOOR, ZONES } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample, TagInfo } from '../types'
 import type { Zone } from '../types'
@@ -69,7 +63,6 @@ function stepWalker(w: Walker, dt: number): void {
   w.y += (dy / dist) * step
 }
 
-/** Arranca la simulación en vivo. Devuelve una función para pararla. */
 export function startDemoLive(onPosition: (p: LivePosition) => void): () => void {
   const walkers = new Map(DEMO_TAGS.map((t) => [t.id, makeWalker(t.id)]))
   const id = window.setInterval(() => {
@@ -88,11 +81,7 @@ export function startDemoLive(onPosition: (p: LivePosition) => void): () => void
   return () => window.clearInterval(id)
 }
 
-/**
- * Trayectoria histórica sintética para replay e insights en modo demo.
- * T3 (Ana) incluye un hueco de ~20 min a mitad del periodo para que el
- * detector de pérdidas de señal tenga algo que encontrar.
- */
+// T3 includes a deliberate signal gap to exercise gap detection.
 export function demoTrajectory(tagId: string, start: Date, end: Date): Sample[] {
   const w = makeWalker(tagId)
   const out: Sample[] = []

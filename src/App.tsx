@@ -98,7 +98,6 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Cabecera */}
       <header className="app-header">
         <div className="header-navigation">
           <div className="flex items-center gap-3">
@@ -141,7 +140,6 @@ export default function App() {
       </header>
 
       <div className="workspace">
-        {/* Barra lateral */}
         <aside className="sidebar" aria-label="Filtros y detalle del tag">
           <div className="sidebar-heading"><span className="eyebrow">CONTROL DE SEGUIMIENTO</span><h2>Tu espacio, en detalle</h2></div>
           {page === 'plan' && (
@@ -161,7 +159,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Empleados */}
           <section>
             <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
               {page === 'insights' ? 'Tags analizados' : 'Seleccionar tag'}
@@ -197,7 +194,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Periodo */}
           <section>
             <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">Periodo</p>
             <PeriodPicker value={period} onChange={setPeriod} />
@@ -217,7 +213,6 @@ export default function App() {
 
           {page === 'plan' && (
             <>
-              {/* Capas */}
               <section>
                 <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">Capas</p>
                 <label className="flex cursor-pointer items-center gap-2 text-[12px]">
@@ -234,7 +229,6 @@ export default function App() {
                 )}
               </section>
 
-              {/* Panel de datos */}
               <section className="detail-card">
                 <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
                   {mode === 'live' ? `Estado de ${selectedTag ?? '—'}` : 'Estadísticas de la jornada'}
@@ -249,7 +243,6 @@ export default function App() {
           </p>
         </aside>
 
-        {/* Contenido */}
         <main className="main-content">
           {page === 'plan' ? (
             <>

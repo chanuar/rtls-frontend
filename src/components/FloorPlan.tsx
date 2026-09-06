@@ -23,7 +23,6 @@ interface Props {
 const QUALITY_COLOR = { ok: '#34d399', warn: '#fbbf24', bad: '#f87171' } as const
 
 function heatColor(t: number): string {
-  // cian → verde → ámbar → rojo
   const hue = 195 * (1 - t)
   return `hsl(${hue} 90% 55%)`
 }
@@ -75,7 +74,6 @@ export function FloorPlan(p: Props) {
       aria-label={TEST_LAYOUT ? 'Área de prueba con posiciones UWB' : 'Plano de la farmacia con posiciones de empleados'}
       style={{ maxHeight: '100%' }}
     >
-      {/* Rejilla de 1 m */}
       {gridLines.v.map((x) => (
         <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="rgba(148,163,184,0.06)" />
       ))}
@@ -96,7 +94,6 @@ export function FloorPlan(p: Props) {
         />
       ) : (
         <>
-          {/* Contorno del local (muro perimetral con hueco de entrada en la fachada) */}
           <path
             d={`M ${X(0)} ${Y(ENTRANCE.y0)} L ${X(0)} ${Y(0)} L ${X(FLOOR.depth)} ${Y(0)} L ${X(FLOOR.depth)} ${Y(FLOOR.width)} L ${X(0)} ${Y(FLOOR.width)} L ${X(0)} ${Y(ENTRANCE.y1)}`}
             fill="none"
@@ -118,7 +115,6 @@ export function FloorPlan(p: Props) {
         </>
       )}
 
-      {/* Zonas */}
       {ZONES.map((z) => (
         <g
           key={z.id}
@@ -150,7 +146,6 @@ export function FloorPlan(p: Props) {
         </g>
       ))}
 
-      {/* Heatmap */}
       {p.heat?.bins.map((b) => {
         const t = b.count / maxHeat
         return (
@@ -167,7 +162,6 @@ export function FloorPlan(p: Props) {
         )
       })}
 
-      {/* Trayectoria del replay */}
       {p.mode === 'replay' && p.replayPath && p.replayPath.length > 1 && (
         <>
           <path
@@ -187,7 +181,6 @@ export function FloorPlan(p: Props) {
         </>
       )}
 
-      {/* Anchors */}
       {p.anchors.map((a) => (
         <g key={a.id}>
           <rect
@@ -207,7 +200,6 @@ export function FloorPlan(p: Props) {
         </g>
       ))}
 
-      {/* Estelas en vivo */}
       {Object.entries(trailsToDraw).map(([tag, trail]) => {
         const color = tagColor(tag, p.tagIds)
         return trail.slice(1).map((s, i) => isContinuous(trail[i], s) && (
@@ -225,7 +217,6 @@ export function FloorPlan(p: Props) {
         ))
       })}
 
-      {/* Tags en vivo */}
       {p.mode === 'live' &&
         Object.values(p.live).map((pos) => {
           const color = tagColor(pos.tag, p.tagIds)
@@ -259,7 +250,6 @@ export function FloorPlan(p: Props) {
           )
         })}
 
-      {/* Marcador del replay */}
       {p.mode === 'replay' && p.replayMarker && (
         <g transform={`translate(${X(p.replayMarker.x)} ${Y(p.replayMarker.y)})`}>
           <circle className="tag-pulse" r={9} fill="none" stroke="#00d4ff" strokeWidth={1.5} />

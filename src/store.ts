@@ -90,7 +90,6 @@ export const useStore = create<Store>((set, get) => ({
   },
 }))
 
-/** La tabla tags puede estar vacía al principio; los tags aparecen al emitir. */
 function inferTagsLater(): TagInfo[] {
   return []
 }

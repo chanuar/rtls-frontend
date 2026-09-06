@@ -12,7 +12,6 @@ export interface TagInfo {
   active: boolean
 }
 
-/** Posición en vivo tal y como la emite el motor por WebSocket. */
 export interface LivePosition {
   tag: string
   ts: string
@@ -22,7 +21,6 @@ export interface LivePosition {
   n_anchors: number
 }
 
-/** Muestra histórica de la tabla positions. */
 export interface Sample {
   ts: string
   x: number

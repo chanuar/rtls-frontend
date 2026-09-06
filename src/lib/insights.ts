@@ -1,15 +1,3 @@
-/**
- * Motor de recomendaciones.
- *
- * Primera versión: reglas heurísticas sobre las trayectorias del periodo.
- * Diseñado para que en el futuro un endpoint del backend (p. ej. POST /insights
- * con un LLM) pueda sustituir o ampliar estas reglas: la UI solo consume
- * la lista de Insight, sea cual sea su origen.
- *
- * Con más histórico en la BD, las reglas de "más de lo habitual" deberían
- * comparar contra la media de ese empleado (baseline por persona y franja),
- * no contra umbrales fijos.
- */
 import { zoneName } from '../config'
 import { analyzeTrajectory, fmtDuration, isContinuous } from './trajectory'
 import { zoneAt } from '../config'
@@ -24,13 +12,13 @@ export interface Insight {
   zone?: string
 }
 
-const MIN_PERIOD_S = 30 * 60 // no analizar periodos menores de 30 min
-const DWELL_INFO = 0.45 // >45 % del tiempo en una zona → info
-const DWELL_WARN = 0.65 // >65 % → aviso
-const GAP_MIN_S = 15 * 60 // hueco de señal mínimo a reportar
-const COPRESENCE_MIN_S = 45 * 60 // coincidencia mínima a reportar
-const COPRESENCE_SHARE = 0.35 // ...o >35 % del tiempo común
-const LOW_ACTIVITY_M_PER_H = 60 // menos de 60 m/h caminados → actividad baja
+const MIN_PERIOD_S = 30 * 60
+const DWELL_INFO = 0.45
+const DWELL_WARN = 0.65
+const GAP_MIN_S = 15 * 60
+const COPRESENCE_MIN_S = 45 * 60
+const COPRESENCE_SHARE = 0.35
+const LOW_ACTIVITY_M_PER_H = 60
 
 export function generateInsights(
   data: Record<string, Sample[]>,
@@ -41,7 +29,6 @@ export function generateInsights(
 
   const entries = Object.entries(data).filter(([, s]) => s.length > 10)
 
-  // 1 · Concentración en una zona
   for (const [tag, samples] of entries) {
     const stats = analyzeTrajectory(samples)
     if (stats.durationS < MIN_PERIOD_S || stats.perZoneS.length === 0) continue
@@ -58,7 +45,6 @@ export function generateInsights(
       })
     }
 
-    // 2 · Actividad baja
     const hours = stats.durationS / 3600
     if (hours >= 2 && stats.distanceM / hours < LOW_ACTIVITY_M_PER_H) {
       out.push({
@@ -71,7 +57,6 @@ export function generateInsights(
     }
   }
 
-  // 3 · Huecos de señal
   for (const [tag, samples] of entries) {
     for (let i = 1; i < samples.length; i++) {
       const a = new Date(samples[i - 1].ts).getTime()
