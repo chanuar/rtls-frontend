@@ -107,7 +107,7 @@ export function FloorPlan(p: Props) {
           <text
             x={X(-0.35)}
             y={Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)}
-            fill="#5d6b7e"
+            fill="#9baec2"
             fontSize={10}
             textAnchor="middle"
             transform={`rotate(-90 ${X(-0.35)} ${Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)})`}
@@ -139,7 +139,7 @@ export function FloorPlan(p: Props) {
             <text
               x={X(z.x) + 7}
               y={Y(z.y) + 15}
-              fill={hoverZone === z.id ? '#00d4ff' : '#5d6b7e'}
+              fill={hoverZone === z.id ? '#69d9eb' : '#9baec2'}
               fontSize={10}
               style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
             >
@@ -200,7 +200,7 @@ export function FloorPlan(p: Props) {
             stroke="rgba(0,212,255,0.5)"
             strokeWidth={1.2}
           />
-          <text x={X(a.x) + 10} y={Y(a.y) + 4} fill="#5d6b7e" fontSize={10} fontFamily="var(--font-mono)">
+          <text x={X(a.x) + 10} y={Y(a.y) + 4} fill="#9baec2" fontSize={12} fontFamily="var(--font-mono)">
             {a.id}
           </text>
           <title>{`${a.id} · (${a.x}, ${a.y}, ${a.z} m)${a.description ? ' · ' + a.description : ''}`}</title>
@@ -235,6 +235,16 @@ export function FloorPlan(p: Props) {
             <g
               key={pos.tag}
               onClick={() => p.onSelect(pos.tag)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Seleccionar ${pos.tag}`}
+              aria-pressed={selected}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  p.onSelect(pos.tag)
+                }
+              }}
               style={{ cursor: 'pointer', transition: 'transform 0.9s linear' }}
               transform={`translate(${X(pos.x)} ${Y(pos.y)})`}
             >

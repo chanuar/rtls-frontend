@@ -97,33 +97,34 @@ export default function App() {
   const selectedLive = selectedTag ? (freshLive[selectedTag] ?? null) : null
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="app-shell">
       {/* Cabecera */}
-      <header className="flex shrink-0 items-center justify-between border-b border-line px-5 py-2.5">
-        <div className="flex items-center gap-5">
+      <header className="app-header">
+        <div className="header-navigation">
           <div className="flex items-center gap-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-accent/40 bg-accent/10 font-mono text-[10px] font-bold text-accent">
+            <div className="brand-mark" aria-hidden="true">
               UWB
             </div>
             <div>
-              <h1 className="text-[13px] font-semibold leading-tight">
+              <h1 className="text-[15px] font-semibold tracking-tight">
                 RTLS · {TEST_LAYOUT ? 'Prueba UWB' : 'Farmacia'}
               </h1>
-              <p className="text-[10px] leading-tight text-muted">
-                {TEST_LAYOUT ? 'Área definida por A0–A3' : 'Local comercial · 152,75 m²'}
+              <p className="mt-0.5 text-[11px] text-muted">
+                Localización en interiores
               </p>
             </div>
           </div>
-          <nav className="flex gap-0.5 rounded-md border border-line bg-panel p-0.5">
+          <nav className="page-navigation" aria-label="Navegación principal">
             {(
               [
                 ['plan', 'Plano'],
-                ['insights', 'Recomendaciones IA'],
+                ['insights', 'Análisis'],
               ] as const
             ).map(([p, label]) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
+                aria-current={page === p ? 'page' : undefined}
                 className={`rounded px-3 py-1 text-[12px] ${
                   page === p ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
                 }`}
@@ -133,21 +134,23 @@ export default function App() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="connection-badge" role="status">
           <span className={`h-1.5 w-1.5 rounded-full ${st.dot} ${status === 'online' ? 'animate-pulse' : ''}`} />
-          <span className="font-mono text-[10px] tracking-widest text-muted">{st.label}</span>
+          <span className="text-[11px] font-medium tracking-wide">{st.label}</span>
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="workspace">
         {/* Barra lateral */}
-        <aside className="flex w-72 shrink-0 flex-col gap-5 overflow-y-auto border-r border-line p-4">
+        <aside className="sidebar" aria-label="Filtros y detalle del tag">
+          <div className="sidebar-heading"><span className="eyebrow">CONTROL DE SEGUIMIENTO</span><h2>Tu espacio, en detalle</h2></div>
           {page === 'plan' && (
             <div className="grid grid-cols-2 gap-1 rounded-md border border-line bg-panel p-1">
               {(['live', 'replay'] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
+                  aria-pressed={mode === m}
                   className={`rounded px-2 py-1.5 text-[12px] ${
                     mode === m ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
                   }`}
@@ -161,11 +164,11 @@ export default function App() {
           {/* Empleados */}
           <section>
             <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
-              {page === 'insights' ? 'Empleados analizados' : 'Empleado'}
+              {page === 'insights' ? 'Tags analizados' : 'Seleccionar tag'}
             </p>
             <div className="flex flex-col gap-1">
               {tags.length === 0 && (
-                <p className="text-[11px] text-muted">Aún no hay tags. Aparecerán al recibir la primera posición.</p>
+                <p className="empty-note">Todavía no hay tags disponibles. Se mostrarán al recibir datos del sistema.</p>
               )}
               {tags.map((t) => {
                 const color = tagColor(t.id, tagIds)
@@ -174,6 +177,7 @@ export default function App() {
                   <button
                     key={t.id}
                     onClick={() => select(t.id)}
+                    aria-pressed={isSel}
                     disabled={page === 'insights'}
                     className={`flex items-center gap-2.5 rounded-md border px-2.5 py-2 text-left ${
                       isSel ? 'border-accent/40 bg-accent/8' : 'border-transparent hover:bg-panel'
@@ -184,7 +188,9 @@ export default function App() {
                       <span className="block truncate text-[12px]">{t.employee ?? t.id}</span>
                       <span className="block font-mono text-[10px] text-muted">{t.id}</span>
                     </span>
-                    {freshLive[t.id] && <span className="h-1.5 w-1.5 rounded-full bg-ok" />}
+                    <span className={`tag-status ${freshLive[t.id] ? 'text-ok' : 'text-muted'}`}>
+                      {freshLive[t.id] ? 'En vivo' : 'Sin datos'}
+                    </span>
                   </button>
                 )
               })}
@@ -200,11 +206,11 @@ export default function App() {
                 <button
                   onClick={() => void loadRange()}
                   disabled={loading || !selectedTag}
-                  className="mt-2 w-full rounded-md border border-accent/40 bg-accent/10 px-2 py-1.5 text-[12px] text-accent hover:bg-accent/20 disabled:opacity-40"
+                  className="primary-button mt-3 w-full"
                 >
                   {loading ? 'Cargando…' : 'Cargar jornada'}
                 </button>
-                {loadError && <p className="mt-1 text-[11px] text-warn">{loadError}</p>}
+                {loadError && <p role="alert" className="mt-2 text-[12px] text-warn">{loadError}</p>}
               </>
             )}
           </section>
@@ -229,7 +235,7 @@ export default function App() {
               </section>
 
               {/* Panel de datos */}
-              <section className="rounded-md border border-line bg-panel p-3">
+              <section className="detail-card">
                 <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
                   {mode === 'live' ? `Estado de ${selectedTag ?? '—'}` : 'Estadísticas de la jornada'}
                 </p>
@@ -238,18 +244,32 @@ export default function App() {
             </>
           )}
 
-          <p className="mt-auto text-[10px] leading-relaxed text-muted">
-            Datos de localización tratados conforme al RGPD: solo horario laboral, acceso restringido y
-            retención limitada.
+          <p className="sidebar-footnote">
+            Las posiciones se muestran en metros. Una conexión activa no garantiza que haya medidas recientes.
           </p>
         </aside>
 
         {/* Contenido */}
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="main-content">
           {page === 'plan' ? (
             <>
-              <div className="min-h-0 flex-1 p-4">
-                <div className="flex h-full items-center rounded-lg border border-line bg-panel p-2">
+              <div className="workspace-title">
+                <div><p className="eyebrow">{mode === 'live' ? 'AHORA · VISTA GENERAL' : 'HISTÓRICO · RECORRIDOS'}</p>
+                  <h2>{mode === 'live' ? 'Cada posición, a la vista.' : 'Vuelve a recorrer la jornada.'}</h2>
+                  <p>{mode === 'live' ? 'Consulta los tags y su última posición válida.' : 'Selecciona un tag y carga el periodo que quieras explorar.'}</p>
+                </div>
+                <span className="layout-badge">{TEST_LAYOUT ? 'Área de prueba' : 'Planta principal'}</span>
+              </div>
+              <div className="overview" aria-label="Resumen del sistema">
+                <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tags.length}</small></strong></div>
+                <div><span>Anchors configurados</span><strong>{anchors.length}<small> referencias</small></strong></div>
+                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : trajectory.length}<small>{mode === 'live' ? (selectedLive ? ' · en vivo' : ' · sin datos') : ' posiciones'}</small></strong></div>
+              </div>
+              <div className="map-card" aria-busy={loading}>
+                <div className="map-heading"><div><span className="map-indicator" /> <h3>{TEST_LAYOUT ? 'Plano de prueba' : 'Plano de la farmacia'}</h3></div>
+                  <span>{mode === 'live' ? 'Seguimiento en vivo' : 'Reproducción'}{showHeat && heat ? ' · mapa de calor' : ''}</span>
+                </div>
+                <div className="map-stage" role="region" aria-label="Plano desplazable" tabIndex={0}>
                   <FloorPlan
                     anchors={anchors}
                     live={freshLive}
@@ -263,6 +283,13 @@ export default function App() {
                     replayTime={replay.cursor}
                     heat={showHeat ? heat : null}
                   />
+                </div>
+                {mode === 'live' && Object.keys(freshLive).length === 0 && (
+                  <div className="map-message" role="status"><strong>{status === 'connecting' ? 'Conectando con tu espacio' : 'Esperando posiciones válidas'}</strong>
+                    <span>{status === 'connecting' ? 'El plano se actualizará cuando el backend esté disponible.' : 'Los tags aparecerán aquí cuando lleguen nuevas medidas.'}</span></div>
+                )}
+                <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span className="legend-scale">Cuadrícula · 1 m</span>
+                  {showHeat && heat && <span>Menos <i className="heat-scale" /> Más muestras</span>}
                 </div>
               </div>
               {mode === 'replay' && trajectory.length > 1 && <ReplayBar replay={replay} />}

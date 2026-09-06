@@ -12,10 +12,10 @@ export function LiveInfo({ pos }: { pos: LivePosition | null }) {
   const q = qualityLevel(pos.quality)
   const zone = zoneAt(pos.x, pos.y)
   return (
-    <div className="flex flex-col gap-1.5 font-mono text-[11px]">
+    <div className="flex flex-col gap-3 font-mono text-[12px]">
       <Row k="Posición" v={`(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m`} />
       <Row k="Zona" v={zone?.name ?? 'Fuera de zona'} />
-      <Row k="Señal" v={<span className={Q_CLASS[q]}>{Q_LABEL[q]} · rms {pos.quality.toFixed(2)} m</span>} />
+      <Row k="Ajuste RMS" v={<span className={Q_CLASS[q]}>{Q_LABEL[q]} · {pos.quality.toFixed(2)} m</span>} />
       <Row k="Anchors" v={String(pos.n_anchors)} />
       <Row k="Última" v={new Date(pos.ts).toLocaleTimeString('es-ES')} />
     </div>

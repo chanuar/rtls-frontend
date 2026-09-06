@@ -59,7 +59,7 @@ export function ReplayBar({ replay }: BarProps) {
     new Date(ms).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   return (
-    <div className="flex items-center gap-3 border-t border-line bg-panel px-4 py-2.5">
+    <div className="replay-controls">
       <button
         onClick={() => setPlaying(!playing)}
         aria-label={playing ? 'Pausar reproducción' : 'Reproducir jornada'}
@@ -85,6 +85,7 @@ export function ReplayBar({ replay }: BarProps) {
           <button
             key={s}
             onClick={() => setSpeed(s)}
+            aria-pressed={speed === s}
             className={`rounded px-2 py-1 font-mono text-[11px] ${
               speed === s ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
             }`}
