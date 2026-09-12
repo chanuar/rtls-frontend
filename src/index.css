@@ -68,7 +68,7 @@ input[type='time'] { min-width: 0; color-scheme: dark; }
 .overview span { display: block; color: var(--color-muted); font-size: 11px; }
 .overview strong { display: block; margin-top: 8px; font-size: 25px; font-weight: 500; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .overview small { font-size: 11px; color: var(--color-muted); font-weight: 400; }
-.map-card { display: flex; flex-direction: column; flex: 1; min-height: 440px; border: 1px solid var(--color-line-2); border-radius: 14px; overflow: hidden; background: var(--color-panel); box-shadow: 0 16px 48px #00000015; }
+.map-card { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 440px; border: 1px solid var(--color-line-2); border-radius: 14px; overflow: hidden; background: var(--color-panel); box-shadow: 0 16px 48px #00000015; }
 .map-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--color-line); }
 .map-heading > div { display: flex; align-items: center; gap: 9px; }
 .map-heading h3 { font-size: 13px; font-weight: 600; }
@@ -76,7 +76,7 @@ input[type='time'] { min-width: 0; color-scheme: dark; }
 .map-indicator { width: 7px; height: 7px; border: 1px solid var(--color-accent); transform: rotate(45deg); }
 .map-stage { flex: 1; display: flex; align-items: center; min-height: 270px; overflow-x: auto; padding: 20px 12px; background: #0e1824; }
 .map-stage > svg { flex-shrink: 0; min-width: 720px; height: auto; }
-.map-message { display: flex; flex-direction: column; gap: 5px; padding: 18px 22px; border-top: 1px solid var(--color-line); }
+.map-message { position: absolute; top: 64px; left: 12px; right: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 5px; padding: 18px 22px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-panel); }
 .map-message strong { font-size: 13px; font-weight: 500; }
 .map-message span { color: var(--color-muted); font-size: 12px; }
 .map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 14px 20px; border-top: 1px solid var(--color-line); color: var(--color-muted); font-size: 11px; }
