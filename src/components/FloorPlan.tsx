@@ -247,7 +247,17 @@ export function FloorPlan(p: Props) {
               {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
               <circle r={selected ? 8 : 6.5} fill={color} stroke="#060a10" strokeWidth={2} />
               <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
-              <text x={14} y={4} fill={color} fontSize={11} fontWeight={600} fontFamily="var(--font-mono)">
+              <text
+                ref={(node) => {
+                  if (!node) return
+                  const width = node.getComputedTextLength()
+                  const markerX = X(pos.x)
+                  const left = markerX + 14 + width <= W - 8
+                    ? markerX + 14 : Math.max(8, markerX - 14 - width)
+                  node.setAttribute('x', String(left - markerX))
+                }}
+                x={14} y={4} fill={color} fontSize={11} fontWeight={600} fontFamily="var(--font-mono)"
+              >
                 {label}
               </text>
               <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
