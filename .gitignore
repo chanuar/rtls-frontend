@@ -1,4 +1,35 @@
-node_modules
-dist
-.env
+# Dependencias y archivos generados
+node_modules/
+dist/
+coverage/
+.vite/
 *.tsbuildinfo
+
+# Configuración local (conservar las plantillas)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs de herramientas
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE y archivos temporales del editor
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# Metadatos del sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
