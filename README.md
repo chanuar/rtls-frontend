@@ -15,9 +15,10 @@ Por defecto apunta a `http://localhost:8000`. Para otro backend, copia `.env.exa
 
 ## Funcionalidades
 
-Las posiciones en vivo caducan a los 10 segundos y se ocultan al desconectarse;
-un WebSocket conectado sin medidas recientes no se presenta como seguimiento
-activo. Los anchors se actualizan cada 5 segundos y al reconectar; un cambio de
+Tras 10 segundos sin medidas válidas o al desconectarse, el tag permanece en
+su última posición conocida, gris y con anillo discontinuo, sin pulsación y con
+la antigüedad visible. No se inventa movimiento ni se cuenta como posición
+reciente; al recibir una medida válida vuelve a actualizarse. Los anchors se actualizan cada 5 segundos y al reconectar; un cambio de
 coordenadas borra las posiciones y estelas del sistema anterior.
 
 Los resultados históricos pertenecen al tag y periodo solicitados. Cambiar la

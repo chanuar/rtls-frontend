@@ -25,7 +25,8 @@ export default function App() {
   const [page, setPage] = useState<Page>('plan')
   const [mode, setMode] = useState<Mode>('live')
   const [showHeat, setShowHeat] = useState(false)
-  const [now, setNow] = useState(Date.now)
+  const [, setNow] = useState(Date.now)
+  const now = Date.now()
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(timer)
@@ -94,7 +95,7 @@ export default function App() {
 
   const st = status === 'online' && !Object.keys(freshLive).length
     ? { label: 'CONECTADO · SIN POSICIONES RECIENTES', dot: 'bg-warn' } : STATUS[status]
-  const selectedLive = selectedTag ? (freshLive[selectedTag] ?? null) : null
+  const selectedLive = selectedTag ? (live[selectedTag] ?? null) : null
 
   return (
     <div className="app-shell">
@@ -186,7 +187,7 @@ export default function App() {
                       <span className="block font-mono text-[10px] text-muted">{t.id}</span>
                     </span>
                     <span className={`tag-status ${freshLive[t.id] ? 'text-ok' : 'text-muted'}`}>
-                      {freshLive[t.id] ? 'En vivo' : 'Sin datos'}
+                      {freshLive[t.id] ? 'En vivo' : live[t.id] ? 'Sin actualizar' : 'Sin datos'}
                     </span>
                   </button>
                 )
@@ -233,7 +234,7 @@ export default function App() {
                 <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
                   {mode === 'live' ? `Estado de ${selectedTag ?? '—'}` : 'Estadísticas de la jornada'}
                 </p>
-                {mode === 'live' ? <LiveInfo pos={selectedLive} /> : <ReplayStats stats={stats} />}
+                {mode === 'live' ? <LiveInfo pos={selectedLive} stale={!!selectedLive && !freshLive[selectedLive.tag]} now={now} /> : <ReplayStats stats={stats} />}
               </section>
             </>
           )}
@@ -256,7 +257,7 @@ export default function App() {
               <div className="overview" aria-label="Resumen del sistema">
                 <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tags.length}</small></strong></div>
                 <div><span>Anchors configurados</span><strong>{anchors.length}<small> referencias</small></strong></div>
-                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : trajectory.length}<small>{mode === 'live' ? (selectedLive ? ' · en vivo' : ' · sin datos') : ' posiciones'}</small></strong></div>
+                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : trajectory.length}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : ' posiciones'}</small></strong></div>
               </div>
               <div className="map-card" aria-busy={loading}>
                 <div className="map-heading"><div><span className="map-indicator" /> <h3>{TEST_LAYOUT ? 'Plano de prueba' : 'Plano de la farmacia'}</h3></div>
@@ -265,7 +266,9 @@ export default function App() {
                 <div className="map-stage" role="region" aria-label="Plano desplazable" tabIndex={0}>
                   <FloorPlan
                     anchors={anchors}
-                    live={freshLive}
+                    live={live}
+                    freshTags={Object.keys(freshLive)}
+                    now={now}
                     trails={freshTrails}
                     tagIds={tagIds}
                     selectedTag={selectedTag}
@@ -277,7 +280,7 @@ export default function App() {
                     heat={showHeat ? heat : null}
                   />
                 </div>
-                {mode === 'live' && Object.keys(freshLive).length === 0 && (
+                {mode === 'live' && Object.keys(live).length === 0 && (
                   <div className="map-message" role="status"><strong>{status === 'connecting' ? 'Conectando con tu espacio' : 'Esperando posiciones válidas'}</strong>
                     <span>{status === 'connecting' ? 'El plano se actualizará cuando el backend esté disponible.' : 'Los tags aparecerán aquí cuando lleguen nuevas medidas.'}</span></div>
                 )}

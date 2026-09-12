@@ -5,17 +5,18 @@ import type { LivePosition } from '../types'
 const Q_LABEL = { ok: 'Buena', warn: 'Regular', bad: 'Mala' } as const
 const Q_CLASS = { ok: 'text-ok', warn: 'text-warn', bad: 'text-danger' } as const
 
-export function LiveInfo({ pos }: { pos: LivePosition | null }) {
+export function LiveInfo({ pos, stale = false, now = Date.now() }: { pos: LivePosition | null; stale?: boolean; now?: number }) {
   if (!pos) {
-    return <p className="text-muted">Sin posición reciente. Esperando una medida válida; las posiciones caducan a los 10 segundos.</p>
+    return <p className="text-muted">Esperando la primera posición válida.</p>
   }
   const q = qualityLevel(pos.quality)
   const zone = zoneAt(pos.x, pos.y)
   return (
     <div className="flex flex-col gap-3 font-mono text-[12px]">
+      {stale && <p className="text-warn">Última posición conocida · hace {Math.max(0, Math.floor((now - Date.parse(pos.ts)) / 1000))} s. Ubicación actual sin confirmar.</p>}
       <Row k="Posición" v={`(${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m`} />
-      <Row k="Zona" v={zone?.name ?? 'Fuera de zona'} />
-      <Row k="Ajuste RMS" v={<span className={Q_CLASS[q]}>{Q_LABEL[q]} · {pos.quality.toFixed(2)} m</span>} />
+      <Row k={stale ? "Última zona" : "Zona"} v={zone?.name ?? 'Fuera de zona'} />
+      <Row k={stale ? "Último ajuste RMS" : "Ajuste RMS"} v={<span className={Q_CLASS[q]}>{Q_LABEL[q]} · {pos.quality.toFixed(2)} m</span>} />
       <Row k="Anchors" v={String(pos.n_anchors)} />
       <Row k="Última" v={new Date(pos.ts).toLocaleTimeString('es-ES')} />
     </div>

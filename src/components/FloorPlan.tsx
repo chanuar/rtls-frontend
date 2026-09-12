@@ -9,6 +9,8 @@ const MARGIN = 0.7 // metros de margen alrededor de los anchors
 interface Props {
   anchors: Anchor[]
   live: Record<string, LivePosition>
+  freshTags?: string[]
+  now?: number
   trails: Record<string, Sample[]>
   tagIds: string[]
   selectedTag: string | null
@@ -219,16 +221,19 @@ export function FloorPlan(p: Props) {
 
       {p.mode === 'live' &&
         Object.values(p.live).map((pos) => {
-          const color = tagColor(pos.tag, p.tagIds)
+          const stale = p.freshTags !== undefined && !p.freshTags.includes(pos.tag)
+          const age = Math.max(0, Math.floor(((p.now ?? Date.now()) - Date.parse(pos.ts)) / 1000))
+          const label = stale ? `${pos.tag} · Última posición · hace ${age} s` : pos.tag
+          const color = stale ? '#94a3b8' : tagColor(pos.tag, p.tagIds)
           const selected = pos.tag === p.selectedTag
-          const q = QUALITY_COLOR[qualityLevel(pos.quality)]
+          const q = stale ? '#fbbf24' : QUALITY_COLOR[qualityLevel(pos.quality)]
           return (
             <g
               key={pos.tag}
               onClick={() => p.onSelect(pos.tag)}
               role="button"
               tabIndex={0}
-              aria-label={`Seleccionar ${pos.tag}`}
+              aria-label={`Seleccionar ${label}`}
               aria-pressed={selected}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -239,11 +244,11 @@ export function FloorPlan(p: Props) {
               style={{ cursor: 'pointer', transition: 'transform 0.9s linear' }}
               transform={`translate(${X(pos.x)} ${Y(pos.y)})`}
             >
-              {selected && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
+              {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
               <circle r={selected ? 8 : 6.5} fill={color} stroke="#060a10" strokeWidth={2} />
-              <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} />
+              <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
               <text x={14} y={4} fill={color} fontSize={11} fontWeight={600} fontFamily="var(--font-mono)">
-                {pos.tag}
+                {label}
               </text>
               <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
             </g>
