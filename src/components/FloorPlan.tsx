@@ -47,7 +47,7 @@ export function FloorPlan(p: Props) {
   }, [p.anchors])
 
   const X = (x: number) => (x - bounds.minX) * SCALE
-  const Y = (y: number) => (y - bounds.minY) * SCALE
+  const Y = (y: number) => (bounds.minY + bounds.h - y) * SCALE
   const W = bounds.w * SCALE
   const H = bounds.h * SCALE
 
@@ -86,7 +86,7 @@ export function FloorPlan(p: Props) {
       {TEST_LAYOUT ? (
         <rect
           x={X(bounds.areaMinX)}
-          y={Y(bounds.areaMinY)}
+          y={Y(bounds.areaMaxY)}
           width={(bounds.areaMaxX - bounds.areaMinX) * SCALE}
           height={(bounds.areaMaxY - bounds.areaMinY) * SCALE}
           fill="rgba(0,212,255,0.025)"
@@ -125,7 +125,7 @@ export function FloorPlan(p: Props) {
         >
           <rect
             x={X(z.x)}
-            y={Y(z.y)}
+            y={Y(z.y + z.h)}
             width={z.w * SCALE}
             height={z.h * SCALE}
             rx={6}
@@ -136,7 +136,7 @@ export function FloorPlan(p: Props) {
           {z.w * SCALE >= 90 && (
             <text
               x={X(z.x) + 7}
-              y={Y(z.y) + 15}
+              y={Y(z.y + z.h) + 15}
               fill={hoverZone === z.id ? '#69d9eb' : '#9baec2'}
               fontSize={10}
               style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
@@ -154,7 +154,7 @@ export function FloorPlan(p: Props) {
           <rect
             key={`${b.cx},${b.cy}`}
             x={X(b.cx * p.heat!.cell)}
-            y={Y(b.cy * p.heat!.cell)}
+            y={Y((b.cy + 1) * p.heat!.cell)}
             width={p.heat!.cell * SCALE}
             height={p.heat!.cell * SCALE}
             fill={heatColor(t)}
