@@ -1,7 +1,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
-const ts = require('typescript')
+const ts = require('@typescript/typescript6')
 
 exports.load = function load(entry, mocks = {}, globals = {}, cache = new Map()) {
   const file = path.resolve(__dirname, '..', entry)

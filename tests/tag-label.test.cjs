@@ -18,7 +18,7 @@ test('tag labels use measured width to stay inside the right edge of the map', (
       return [node.props?.children].flat(Infinity).map(find).find(Boolean)
     }
     let offset
-    find(tree).ref({ getComputedTextLength: () => width, setAttribute: (key, value) => {
+    find(tree).props.ref({ getComputedTextLength: () => width, setAttribute: (key, value) => {
       assert.equal(key, 'x')
       offset = Number(value)
     } })

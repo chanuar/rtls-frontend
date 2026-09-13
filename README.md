@@ -4,8 +4,10 @@ Interfaz web de visualización para el sistema de seguimiento de empleados. Cone
 
 ## Puesta en marcha
 
+Requisitos: **Node 24.21.0 LTS** y **npm 11.19.0**.
+
 ```bash
-npm install
+npm ci
 npm run dev          # http://localhost:5173
 ```
 
@@ -49,7 +51,7 @@ npm run build
 src/
 ├── config.ts               URLs, zonas de la farmacia, colores, umbrales de calidad
 ├── types.ts                Tipos compartidos (espejo de la API)
-├── store.ts                Zustand: estado en vivo, WebSocket con reconexión, fallback demo
+├── store.ts                Zustand: estado en vivo, WebSocket con reconexión, demo explícita
 ├── lib/
 │   ├── api.ts              Cliente REST
 │   ├── trajectory.ts       Análisis: distancia, paradas, tiempo por zona, interpolación
