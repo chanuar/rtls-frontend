@@ -41,32 +41,37 @@ npm run build
 - **En vivo:** plano SVG con posiciones por WebSocket (reconexión automática), estelas de movimiento con desvanecimiento, anillo de calidad por tag (verde/ámbar/rojo según el residuo RMS de la trilateración), zona actual y últimas coordenadas del empleado seleccionado.
 - **Reproducción:** carga la trayectoria de un empleado en un periodo, la reproduce con interpolación suave (×1, ×4, ×16, ×60), scrubber temporal, y calcula estadísticas: distancia recorrida, paradas (≥30 s quieto) y tiempo por zona.
 - **Mapa de calor:** capa superpuesta generada desde el endpoint `/heatmap` (rejilla de 0,5 m), con escala cian → rojo.
-- **Recomendaciones IA:** segunda página que analiza los movimientos de todos los empleados en un periodo y detecta patrones: permanencias largas en una zona, coincidencias prolongadas entre empleados, pérdidas de señal (≥15 min) y actividad anómalamente baja. Primera versión con reglas heurísticas (`src/lib/insights.ts`); la UI está desacoplada del origen, pensada para conectar en el futuro un endpoint `/insights` con LLM en el backend y baselines por empleado.
+- **Análisis:** resume las muestras y el tiempo observado de cada tag y aplica reglas locales para señalar permanencias largas, coincidencias entre empleados, pérdidas de señal (≥15 min) y poco movimiento registrado. Las reglas requieren más de 10 muestras por tag; permanencias, al menos 30 min observados, y poco movimiento, al menos 2 h. No utiliza IA ni un endpoint `/insights`, no compara con un historial habitual y no evalúa el rendimiento laboral.
 - **Selector de periodo:** controles nativos de fecha y hora local, desde/hasta, con presets (Hoy, Ayer, 7 días). Las consultas se envían en UTC; los periodos incompletos o invertidos no se pueden cargar.
 - **Plano de la farmacia:** planta aproximada de 28 × 5,86 m con las zonas configuradas: atención al público, rebotica, oficina y almacén, más el perímetro y la entrada. Zonas definidas en metros en `src/config.ts` — afinar límites al medir con cinta métrica. Eje X = profundidad desde la fachada; eje Y = anchura.
 
-## Estructura
+## Estructura principal
 
 ```
 src/
+├── App.tsx                 Composición, navegación y conexión
 ├── config.ts               URLs, zonas de la farmacia, colores, umbrales de calidad
 ├── types.ts                Tipos compartidos (espejo de la API)
 ├── store.ts                Zustand: estado en vivo, WebSocket con reconexión, demo explícita
 ├── lib/
 │   ├── api.ts              Cliente REST
 │   ├── trajectory.ts       Análisis: distancia, paradas, tiempo por zona, interpolación
+│   ├── insights.ts         Reglas locales de análisis
 │   └── demo.ts             Simulador cliente para el modo demo
 └── components/
+    ├── Workspace.tsx       Seguimiento, filtros y carga del histórico/mapa de calor
+    ├── TrackingView.tsx    Estado en vivo, selección y vistas del plano
     ├── FloorPlan.tsx       Plano SVG: rejilla, zonas, anchors, tags, estelas, heatmap, replay
     ├── Replay.tsx          Hook de reproducción + barra de transporte
-    └── Stats.tsx           Panel en vivo y estadísticas de jornada
+    ├── Stats.tsx           Detalle en vivo y estadísticas del histórico
+    └── Insights.tsx        Consulta y presentación del análisis
 ```
 
 ## Decisiones técnicas
 
-- **SVG, no Leaflet ni canvas:** coordenadas locales en metros directamente de la trilateración; con ≤50 tags el SVG rinde de sobra y simplifica hover, tooltips y accesibilidad.
+- **SVG:** representa las coordenadas locales en metros y permite seleccionar tags con ratón o teclado. El rendimiento depende de la cantidad y frecuencia de las muestras y debe medirse con el histórico y dispositivo utilizados.
 - **Escala:** «Ajustar plano» muestra el conjunto; «Ver detalle» usa 64 px/m y permite desplazarse con barras o flechas del teclado. Las etiquetas y la selección mantienen un tamaño legible. La farmacia usa la geometría de `src/config.ts`; el área de prueba calcula sus límites desde `/anchors`.
-- **Heatmap como rects SVG:** los bins de 0,5 m llegan ya agregados del backend; para plantas pequeñas son <500 rectángulos, más simple que un canvas y con el mismo sistema de coordenadas.
+- **Heatmap como rectángulos SVG:** las celdas de 0,5 m llegan agregadas del backend y usan las mismas coordenadas que el plano. Cuentan muestras, no tiempo de ocupación; la intensidad se normaliza al máximo de cada respuesta.
 - **Sin librería de mapas ni de gráficas:** cero dependencias pesadas; solo React, Zustand y Tailwind 4.
 
 ## Pendiente / ideas
