@@ -3,6 +3,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+/tmp/
 *.tsbuildinfo
 
 # Configuración local (conservar las plantillas)
@@ -19,6 +20,9 @@ pnpm-debug.log*
 
 # IDE y archivos temporales del editor
 .idea/
+.codex/
+.claude/
+.opencode/
 *.iml
 .vscode/*
 !.vscode/extensions.json
