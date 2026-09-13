@@ -70,3 +70,43 @@ test('history ignores an old response after changing tag or period', async ({ pa
   await page.getByRole('button', { name: 'Ayer', exact: true }).click()
   await expect(page.getByRole('slider')).toHaveCount(0)
 })
+
+test('optional heatmap failure leaves history and replay available', async ({ page }) => {
+  await setup(page)
+  let requests = 0
+  await page.route('**/heatmap?*', route => { requests++; return route.fulfill({ status: 500 }) })
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByRole('slider')).toBeVisible()
+  expect(requests).toBe(0)
+  await page.getByRole('checkbox', { name: 'Mapa de calor del periodo' }).check()
+  await expect(page.getByRole('alert')).toContainText('Mapa de calor:')
+  await expect(page.getByRole('slider')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Reproducir jornada' }).click()
+  await expect(page.getByRole('button', { name: 'Pausar reproducción' })).toBeVisible()
+  await page.getByRole('button', { name: 'T1 T1', exact: false }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('slider')).toHaveCount(0)
+})
+
+test('a delayed heatmap cannot attach to a different tag or period', async ({ page }) => {
+  await setup(page)
+  let release: () => void = () => {}, requested = false
+  await page.route('**/heatmap?*', async route => {
+    requested = true
+    await new Promise<void>(resolve => { release = resolve })
+    await route.fulfill({ status: 500 })
+  })
+  await page.getByRole('checkbox', { name: 'Mapa de calor del periodo' }).check()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect.poll(() => requested).toBe(true)
+  await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'T1 T1', exact: false }).click()
+  await page.getByRole('button', { name: 'Ayer', exact: true }).click()
+  const response = page.waitForResponse('**/heatmap?*')
+  release()
+  await response
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByText('Cargando mapa de calor…')).toHaveCount(0)
+})

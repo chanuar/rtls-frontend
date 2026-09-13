@@ -38,9 +38,26 @@ export default function App() {
   const [period, setPeriod] = useState<Period>(todayPeriod)
 
   const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), status === 'demo'])
-  const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[]; heat: Heatmap } | null>(null)
+  const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[] } | null>(null)
   const trajectory = loaded?.key === queryKey ? loaded.trajectory : EMPTY_SAMPLES
-  const heat = loaded?.key === queryKey ? loaded.heat : null
+  const [heatResult, setHeatResult] = useState<{ source: typeof loaded; heat: Heatmap | null; error: string | null } | null>(null)
+  const currentHeat = loaded?.key === queryKey && heatResult?.source === loaded ? heatResult : null
+  const heat = currentHeat?.heat ?? null
+  const heatError = currentHeat?.error ?? null
+  const heatLoading = showHeat && loaded?.key === queryKey && !currentHeat
+  useEffect(() => {
+    if (!showHeat || !loaded || loaded.key !== queryKey || !selectedTag) return
+    let cancelled = false
+    setHeatResult(null)
+    const pending = status === 'demo'
+      ? Promise.resolve({ cell: 0.5, bins: demoHeatmap(loaded.trajectory, 0.5) })
+      : fetchHeatmap(period.start, period.end, 0.5, selectedTag)
+    pending.then(
+      heat => { if (!cancelled) setHeatResult({ source: loaded, heat, error: null }) },
+      error => { if (!cancelled) setHeatResult({ source: loaded, heat: null, error: error instanceof Error ? error.message : 'Error al cargar el mapa de calor.' }) },
+    )
+    return () => { cancelled = true }
+  }, [showHeat, loaded, queryKey, selectedTag, status, period])
   const request = useRef(0)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -73,14 +90,11 @@ export default function App() {
     try {
       if (status === 'demo') {
         const traj = demoTrajectory(selectedTag, period.start, period.end)
-        setLoaded({ key: queryKey, trajectory: traj, heat: { cell: 0.5, bins: demoHeatmap(traj, 0.5) } })
+        setLoaded({ key: queryKey, trajectory: traj })
       } else {
-        const [traj, hm] = await Promise.all([
-          fetchPositions(selectedTag, period.start, period.end),
-          fetchHeatmap(period.start, period.end, 0.5, selectedTag),
-        ])
+        const traj = await fetchPositions(selectedTag, period.start, period.end)
         if (id !== request.current) return
-        setLoaded({ key: queryKey, trajectory: traj, heat: hm })
+        setLoaded({ key: queryKey, trajectory: traj })
         if (traj.length === 0) setLoadError('No hay posiciones en ese periodo. Prueba otro o arranca el simulador.')
       }
     } catch (err) {
@@ -223,7 +237,9 @@ export default function App() {
                   />
                   Mapa de calor del periodo
                 </label>
-                {showHeat && !heat && (
+                {showHeat && heatError && <p role="alert" className="mt-1 text-[11px] text-warn">Mapa de calor: {heatError}</p>}
+                {heatLoading && <p role="status" className="mt-1 text-[11px] text-muted">Cargando mapa de calor…</p>}
+                {showHeat && !heat && !heatLoading && !heatError && (
                   <p className="mt-1 text-[11px] text-muted">Pulsa «Cargar jornada» para generarlo.</p>
                 )}
               </section>
