@@ -105,3 +105,33 @@ test('anchor refresh applies calibration and clears positions in the old coordin
   r.useStore.getState().stop()
   assert.equal(r.intervals.size, 0)
 })
+
+test('reconnect refreshes tag metadata and catalogue while preserving an existing selection', async () => {
+  let tags = [{ id: 'T0', employee: 'Antes', active: true }, { id: 'T1', employee: null, active: true }]
+  const r = runtime({ fetchTags: async () => tags })
+  await r.useStore.getState().init()
+  r.useStore.getState().select('T1')
+  r.sockets[0].close()
+  tags = [{ id: 'T1', employee: 'Después', active: false }, { id: 'T2', employee: 'Nuevo', active: true }]
+  const retry = [...r.timeouts.values()][0]
+  r.timeouts.clear()
+  retry()
+  r.sockets.at(-1).onopen()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().tags, tags)
+  assert.equal(r.useStore.getState().selectedTag, 'T1')
+  assert.equal(Object.keys(r.useStore.getState().live).length, 0)
+  r.useStore.getState().stop()
+})
+
+test('tag refresh completed after shutdown cannot replace the catalogue', async () => {
+  let resolve, calls = 0
+  const tags = [{ id: 'T0', employee: null, active: true }]
+  const r = runtime({ fetchTags: () => ++calls === 1 ? Promise.resolve(tags) : new Promise(done => { resolve = done }) })
+  await r.useStore.getState().init()
+  r.sockets[0].onopen()
+  r.useStore.getState().stop()
+  resolve([])
+  await new Promise(done => setImmediate(done))
+  assert.equal(r.useStore.getState().tags, tags)
+})

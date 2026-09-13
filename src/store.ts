@@ -105,6 +105,18 @@ function connectWs(get: () => Store) {
   ws.onopen = () => {
     useStore.setState({ status: 'online' })
     void refreshAnchors()
+    void refreshTags()
+  }
+  async function refreshTags() {
+    try {
+      const tags = await fetchTags()
+      if (ws !== socket) return
+      const selected = get().selectedTag
+      useStore.setState({ tags, selectedTag: tags.some(t => t.id === selected) ? selected : tags[0]?.id ?? null })
+    } catch (error) {
+      if (ws !== socket) return
+      useStore.setState({ connectionError: error instanceof Error ? error.message : 'Error al actualizar los tags.' })
+    }
   }
   let refreshing = false
   async function refreshAnchors() {
