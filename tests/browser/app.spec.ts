@@ -72,6 +72,24 @@ test('catalogue error remains visible through anchor refreshes until tags recove
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
+test('invalid live messages explain rejection and cannot block the next valid position', async ({ page }) => {
+  const sockets = await setup(page)
+  await expect.poll(() => sockets.size).toBe(1)
+  const send = (ts: string) => sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts, x: 1, y: 2, quality: 0.1, n_anchors: 4 }))
+  sockets.values().next().value!.send('not json')
+  await expect(page.getByRole('alert')).toContainText('JSON inválido')
+  send('2026-02-30T12:00:00Z')
+  await expect(page.getByRole('alert')).toContainText('fecha con zona horaria')
+  send('2026-09-13T12:00:00')
+  await expect(page.getByRole('alert')).toContainText('fecha con zona horaria')
+  send('2026-09-14T12:00:00Z')
+  await expect(page.getByRole('alert')).toContainText('futuro')
+  await expect(page.getByRole('button', { name: 'Seleccionar T0', exact: true })).toHaveCount(0)
+  send('2026-09-13T12:00:00Z')
+  await expect(page.getByRole('button', { name: 'Seleccionar T0', exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
 test('history ignores an old response after changing tag or period', async ({ page }) => {
   await setup(page)
   let release: () => void = () => {}

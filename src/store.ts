@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { fetchAnchors, fetchTags } from './lib/api'
+import { isTimestamp } from './lib/time'
 import { DEMO_ANCHORS, DEMO_TAGS, startDemoLive } from './lib/demo'
 import { DEMO_MODE, WS_URL } from './config'
 import type { Anchor, ConnectionStatus, LivePosition, Sample, TagInfo } from './types'
@@ -11,6 +12,7 @@ interface Store {
   connectionError: string | null
   anchorError: string | null
   tagError: string | null
+  positionError: string | null
   anchors: Anchor[]
   tags: TagInfo[]
   live: Record<string, LivePosition>
@@ -19,7 +21,7 @@ interface Store {
   init: () => Promise<void>
   stop: () => void
   select: (tag: string) => void
-  _apply: (p: LivePosition) => void
+  _apply: (p: unknown) => string | null
 }
 
 let stopDemo: (() => void) | null = null
@@ -34,6 +36,7 @@ export const useStore = create<Store>((set, get) => ({
   connectionError: null,
   anchorError: null,
   tagError: null,
+  positionError: null,
   anchors: [],
   tags: [],
   live: {},
@@ -43,7 +46,7 @@ export const useStore = create<Store>((set, get) => ({
   init: async () => {
     get().stop()
     const current = generation
-    set({ status: 'connecting', connectionError: null, anchorError: null, tagError: null })
+    set({ status: 'connecting', connectionError: null, anchorError: null, tagError: null, positionError: null })
     if (DEMO_MODE) {
       set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
       stopDemo = startDemoLive((p) => get()._apply(p))
@@ -75,11 +78,8 @@ export const useStore = create<Store>((set, get) => ({
   select: (tag) => set({ selectedTag: tag }),
 
   _apply: (p) => {
-    if (!p || typeof p.tag !== 'string' || !p.tag.trim() ||
-        typeof p.ts !== 'string' || !Number.isFinite(Date.parse(p.ts)) || Date.parse(p.ts) > Date.now() ||
-        !Number.isFinite(p.x) || !Number.isFinite(p.y) ||
-        !Number.isFinite(p.quality) || p.quality < 0 ||
-        !Number.isInteger(p.n_anchors) || p.n_anchors < 3) return
+    if (!isLivePosition(p)) return 'Posición rechazada: revisa el tag, la fecha con zona horaria, las coordenadas, el RMS y el número de anchors.'
+    if (Date.parse(p.ts) > Date.now()) return 'Posición rechazada: la fecha está en el futuro. Revisa los relojes del sistema.'
     set((s) => {
       if (s.live[p.tag] && Date.parse(p.ts) <= Date.parse(s.live[p.tag].ts)) return s
       const trail = [...(s.trails[p.tag] ?? []), { ts: p.ts, x: p.x, y: p.y, quality: p.quality, n_anchors: p.n_anchors }]
@@ -94,11 +94,21 @@ export const useStore = create<Store>((set, get) => ({
         selectedTag: s.selectedTag ?? p.tag,
       }
     })
+    return null
   },
 }))
 
 function inferTagsLater(): TagInfo[] {
   return []
+}
+
+function isLivePosition(value: unknown): value is LivePosition {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const p = value as Record<string, unknown>
+  return typeof p.tag === 'string' && !!p.tag.trim() && isTimestamp(p.ts) &&
+    typeof p.x === 'number' && Number.isFinite(p.x) && typeof p.y === 'number' && Number.isFinite(p.y) &&
+    typeof p.quality === 'number' && Number.isFinite(p.quality) && p.quality >= 0 &&
+    typeof p.n_anchors === 'number' && Number.isInteger(p.n_anchors) && p.n_anchors >= 3
 }
 
 function connectWs(get: () => Store) {
@@ -154,12 +164,16 @@ function connectWs(get: () => Store) {
     if (get().tagError) void refreshTags()
   }, 5000)
   ws.onmessage = (ev) => {
+    let p: unknown
     try {
-      const p = JSON.parse(ev.data as string) as LivePosition
-      get()._apply(p)
-    } catch {
-      /* mensaje no JSON — ignorar */
+      p = JSON.parse(ev.data as string)
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      useStore.setState({ positionError: 'Mensaje de posición rechazado: JSON inválido. Revisa el emisor.' })
+      return
     }
+    const positionError = get()._apply(p)
+    if (get().positionError !== positionError) useStore.setState({ positionError })
   }
   ws.onclose = () => {
     if (socket !== ws) return

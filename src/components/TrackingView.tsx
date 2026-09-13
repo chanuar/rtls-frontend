@@ -41,7 +41,7 @@ export function ConnectionBadge() {
 }
 
 export function ConnectionError() {
-  const error = useStore(s => [s.connectionError, s.anchorError, s.tagError].filter(Boolean).join(' '))
+  const error = useStore(s => [s.connectionError, s.anchorError, s.tagError, s.positionError].filter(Boolean).join(' '))
   return error && <p role="alert" className="px-5 py-2 text-[13px] text-warn">{error}</p>
 }
 

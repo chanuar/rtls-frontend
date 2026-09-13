@@ -1,4 +1,5 @@
 import { API_URL } from '../config'
+import { isTimestamp } from './time'
 import type { Anchor, Heatmap, Sample, TagInfo } from '../types'
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -6,9 +7,6 @@ const record = (value: unknown): value is Record<string, unknown> =>
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const id = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 const nullableText = (value: unknown) => value === null || typeof value === 'string'
-const timestamp = (value: unknown): value is string => typeof value === 'string' &&
-  /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?(Z|[+-]([01]\d|2[0-3]):[0-5]\d)$/.test(value) &&
-  Number.isFinite(Date.parse(value)) && new Date(value.slice(0, 10)).toISOString().slice(0, 10) === value.slice(0, 10)
 
 function anchors(value: unknown): value is Anchor[] {
   return Array.isArray(value) && value.every(a => record(a) && id(a.id) &&
@@ -23,7 +21,7 @@ function tags(value: unknown): value is TagInfo[] {
 }
 
 function samples(value: unknown): value is Sample[] {
-  return Array.isArray(value) && value.every((s, i) => record(s) && timestamp(s.ts) &&
+  return Array.isArray(value) && value.every((s, i) => record(s) && isTimestamp(s.ts) &&
     finite(s.x) && finite(s.y) && (s.quality === null || (finite(s.quality) && s.quality >= 0)) &&
     (s.n_anchors === null || (finite(s.n_anchors) && Number.isInteger(s.n_anchors) && s.n_anchors >= 3)) &&
     (i === 0 || Date.parse(s.ts) > Date.parse(value[i - 1].ts)))

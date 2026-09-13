@@ -53,7 +53,8 @@ test('reconnect keeps one keepalive and shutdown cancels timers and socket callb
 test('reject malformed and older positions before updating the store', () => {
   const { useStore } = load('src/store.ts')
   for (const p of [null, {}, { ...position, quality: null }, { ...position, x: Infinity },
-    { ...position, n_anchors: 2 }, { ...position, ts: 'invalid' }, { ...position, tag: '' }]) {
+    { ...position, n_anchors: 2 }, { ...position, ts: 'invalid' }, { ...position, tag: '' },
+    { ...position, ts: '2026-02-30T12:00:00Z' }, { ...position, ts: '2026-09-05T12:00:00' }]) {
     useStore.getState()._apply(p)
   }
   assert.equal(Object.keys(useStore.getState().live).length, 0)
