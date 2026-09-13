@@ -52,8 +52,9 @@ test('chunk boundaries preserve continuity and never bridge a gap or rejected ju
     const html = renderToStaticMarkup(React.createElement(ReplayPath, { samples, time: Date.parse(last.ts), minX: 0, maxY: 6, scale: 64 }))
     const paths = [...html.matchAll(/<path d="([^"]+)"/g)]
     assert.equal(paths.length, 4)
-    assert.equal(paths[2][1].replace(/[^ML]/g, ''), isContinuous(samples[255], last) ? 'ML' : 'MM')
-    assert.equal(paths[2][1], paths[3][1])
+    assert.equal(paths[1][1].replace(/[^ML]/g, ''), isContinuous(samples[255], last) ? 'ML' : 'MM')
+    assert.equal(paths[0][1], paths[2][1])
+    assert.equal(paths[1][1], paths[3][1])
   }
 })
 

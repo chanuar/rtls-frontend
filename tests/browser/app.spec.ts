@@ -356,6 +356,26 @@ test('replay can finish and play again in StrictMode without impure updater warn
   expect(errors).toEqual([])
 })
 
+test('played paths remain above future overlapping chunks when seeking forward and backward', async ({ page }) => {
+  await setup(page)
+  const route = Array.from({ length: 513 }, (_, i) => ({ ...samples[0],
+    ts: new Date(today.getTime() - 3600000 + i * 5000).toISOString(), x: 1 + (i % 256) * 4 / 255,
+  }))
+  await page.route('**/positions/*', request => request.fulfill({ json: route }))
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  const slider = page.getByRole('slider', { name: 'Posición temporal' })
+  for (const index of [200, 400, 100]) {
+    await slider.fill(String(Date.parse(route[index].ts)))
+    await expect.poll(() => page.locator('svg path[stroke="var(--color-accent)"]').first().evaluate(path => {
+      const played = path as SVGPathElement
+      const point = played.getPointAtLength(played.getTotalLength() / 2)
+      return [...played.ownerSVGElement!.querySelectorAll('path')]
+        .filter(p => p.isPointInStroke(point)).at(-1)?.getAttribute('stroke')
+    })).toBe('var(--color-accent)')
+  }
+})
+
 test('freshness, recovery and label placement work in the real SVG', async ({ page }) => {
   await page.addInitScript(() => {
     const measure = SVGTextElement.prototype.getComputedTextLength

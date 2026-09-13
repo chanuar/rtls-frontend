@@ -6,11 +6,8 @@ const CHUNK_SAMPLES = 256
 interface Chunk { start: number; path: string; offsets: number[] }
 
 const ReplayChunk = memo(function ReplayChunk({ chunk, index }: { chunk: Chunk; index: number }) {
-  return <>
-    <path d={chunk.path} fill="none" stroke="var(--map-path)" strokeWidth={1.5} />
-    <path d={chunk.path.slice(0, chunk.offsets[index - chunk.start] ?? 0)} fill="none"
-      stroke="var(--color-accent)" strokeWidth={2} strokeOpacity={0.8} strokeLinejoin="round" />
-  </>
+  return <path d={chunk.path.slice(0, chunk.offsets[index - chunk.start] ?? 0)} fill="none"
+    stroke="var(--color-accent)" strokeWidth={2} strokeOpacity={0.8} strokeLinejoin="round" />
 })
 
 export function ReplayPath({ samples, time, minX, maxY, scale }: {
@@ -32,6 +29,9 @@ export function ReplayPath({ samples, time, minX, maxY, scale }: {
     return { chunks, timestamps }
   }, [samples, minX, maxY, scale])
   const index = sampleIndexAt(samples, time, geometry.timestamps)
-  return <>{geometry.chunks.map(chunk => <ReplayChunk key={chunk.start} chunk={chunk}
-    index={Math.max(chunk.start - 1, Math.min(index, chunk.start + chunk.offsets.length - 1))} />)}</>
+  return <>
+    {geometry.chunks.map(chunk => <path key={chunk.start} d={chunk.path} fill="none" stroke="var(--map-path)" strokeWidth={1.5} />)}
+    {geometry.chunks.map(chunk => <ReplayChunk key={chunk.start} chunk={chunk}
+      index={Math.max(chunk.start - 1, Math.min(index, chunk.start + chunk.offsets.length - 1))} />)}
+  </>
 }
