@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { TEST_LAYOUT } from '../config'
-import { fetchHeatmap, fetchPositions } from '../lib/api'
-import { demoHeatmap, demoTrajectory } from '../lib/demo'
-import { analyzeTrajectory } from '../lib/trajectory'
 import { useStore } from '../store'
 import { InsightsPage } from './Insights'
 import { PeriodPicker, todayPeriod, isValidPeriod, type Period } from './PeriodPicker'
 import { ReplayStats } from './Stats'
 import { TagList, SelectedLiveInfo, Overview, LiveMap, ReplayMap } from './TrackingView'
-import type { Heatmap, Mode, Page, Sample } from '../types'
-
-const EMPTY_SAMPLES: Sample[] = []
+import type { Mode, Page } from '../types'
+import { useHistory } from './useHistory'
 
 export function Workspace({ page }: { page: Page }) {
   const demo = useStore(s => s.status === 'demo')
@@ -22,72 +18,8 @@ export function Workspace({ page }: { page: Page }) {
   const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches)
   const title = useRef<HTMLHeadingElement>(null)
 
-  const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), demo])
-  const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[] } | null>(null)
-  const historyLoaded = loaded?.key === queryKey
-  const trajectory = historyLoaded ? loaded.trajectory : EMPTY_SAMPLES
-  const [heatResult, setHeatResult] = useState<{ source: typeof loaded; heat: Heatmap | null; error: string | null } | null>(null)
-  const currentHeat = loaded?.key === queryKey && heatResult?.source === loaded ? heatResult : null
-  const heat = currentHeat?.heat ?? null
-  const heatError = currentHeat?.error ?? null
-  const heatLoading = showHeat && loaded?.key === queryKey && !currentHeat
-  useEffect(() => {
-    if (!showHeat || !loaded || loaded.key !== queryKey || !selectedTag) return
-    let cancelled = false
-    setHeatResult(null)
-    const pending = demo
-      ? Promise.resolve({ cell: 0.5, bins: demoHeatmap(loaded.trajectory, 0.5) })
-      : fetchHeatmap(period.start, period.end, 0.5, selectedTag)
-    pending.then(
-      heat => { if (!cancelled) setHeatResult({ source: loaded, heat, error: null }) },
-      error => { if (!cancelled) setHeatResult({ source: loaded, heat: null, error: error instanceof Error ? error.message : 'Error al cargar el mapa de calor.' }) },
-    )
-    return () => { cancelled = true }
-  }, [showHeat, loaded, queryKey, selectedTag, demo, period])
-  const request = useRef(0)
-  const [loading, setLoading] = useState(false)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const historyMessage = loading ? 'Cargando jornada…' : loadError ?? (
-    !historyLoaded ? 'Selecciona un tag y un periodo, y pulsa «Cargar jornada».'
-      : trajectory.length === 0 ? 'No hay posiciones en este periodo. Prueba otro periodo.'
-        : trajectory.length === 1 ? 'Solo hay una muestra: se muestra la posición observada, pero no hay un intervalo para reproducir ni calcular estadísticas.'
-          : null
-  )
-  useEffect(() => {
-    request.current = request.current + 1
-    setLoading(false)
-    setLoadError(null)
-    return () => { request.current++ }
-  }, [queryKey])
-
+  const { historyLoaded, trajectory, heat, heatError, heatLoading, loading, loadError, historyMessage, stats, loadRange } = useHistory({ selectedTag, period, demo, showHeat })
   const tagIds = useMemo(() => tags.map((t) => t.id), [tags])
-  const stats = useMemo(() => (trajectory.length > 1 ? analyzeTrajectory(trajectory) : null), [trajectory])
-
-  async function loadRange() {
-    if (!selectedTag) return
-    if (!isValidPeriod(period)) {
-      setLoadError('El final debe ser posterior al inicio.')
-      return
-    }
-    const id = ++request.current
-    setLoading(true)
-    setLoadError(null)
-    setLoaded(null)
-    try {
-      if (demo) {
-        const traj = demoTrajectory(selectedTag, period.start, period.end)
-        setLoaded({ key: queryKey, trajectory: traj })
-      } else {
-        const traj = await fetchPositions(selectedTag, period.start, period.end)
-        if (id !== request.current) return
-        setLoaded({ key: queryKey, trajectory: traj })
-      }
-    } catch (err) {
-      if (id === request.current) setLoadError(err instanceof Error ? err.message : 'Error al cargar los datos')
-    } finally {
-      if (id === request.current) setLoading(false)
-    }
-  }
 
   return (
       <div className="workspace">
