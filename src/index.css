@@ -99,9 +99,18 @@ input[type='time'] { min-width: 0; }
 .map-heading h3 { font-size: 13px; font-weight: 600; }
 .map-heading > span { font-size: 11px; color: var(--color-muted); }
 .map-indicator { width: 7px; height: 7px; border: 1px solid var(--color-accent); transform: rotate(45deg); }
-.map-stage { flex: 1; display: flex; align-items: center; min-height: 270px; overflow-x: auto; padding: 20px 12px; background: var(--map-background); }
-.map-stage > svg { flex-shrink: 0; min-width: 720px; height: auto; }
-.map-message { position: absolute; top: 64px; left: 12px; right: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 5px; padding: 18px 22px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-panel); }
+.map-stage { flex: 1; min-height: 270px; overflow: auto; padding: 24px; background: var(--map-background); }
+.floor-plan { display: block; width: 100%; height: auto; overflow: visible; }
+.map-stage[data-view='detail'] > svg { width: var(--plan-width); max-width: none; }
+.map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px 6px; }
+.map-toolbar button { min-height: 40px; padding: 6px 10px; border: 1px solid var(--color-line-2); border-radius: 4px; font-size: 13px; }
+.map-toolbar [aria-pressed='true'] { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
+.map-hint { padding: 0 20px 12px; font-size: 12px; color: var(--color-muted); }
+.map-label { paint-order: stroke; stroke: var(--map-background); stroke-width: 3px; stroke-linejoin: round; }
+.tag-focus-ring { visibility: hidden; }
+.floor-plan [role='button']:focus-visible { outline: none; }
+.floor-plan [role='button']:focus-visible .tag-focus-ring { visibility: visible; }
+.map-message { display: flex; flex-direction: column; gap: 5px; padding: 14px 20px; border-top: 1px solid var(--color-line); background: var(--color-panel); }
 .map-message strong { font-size: 13px; font-weight: 500; }
 .map-message span { color: var(--color-muted); font-size: 12px; }
 .map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 14px 20px; border-top: 1px solid var(--color-line); color: var(--color-muted); font-size: 11px; }

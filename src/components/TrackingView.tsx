@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { TEST_LAYOUT, isFresh, tagColor } from '../config'
 import { useStore } from '../store'
 import { FloorPlan } from './FloorPlan'
@@ -114,11 +114,25 @@ export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: numbe
 function MapCard({ mode, loading, heat, children, emptyState }: {
   mode: Mode; loading: boolean; heat: Heatmap | null; children: ReactNode; emptyState?: ReactNode
 }) {
+  const [detail, setDetail] = useState(false)
+  const stage = useRef<HTMLDivElement>(null)
+  const hint = useId()
+  const canCenter = useStore(s => mode === 'live' && !!(s.selectedTag && s.live[s.selectedTag]))
+  function centerSelection() {
+    stage.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+  useLayoutEffect(() => { if (detail) centerSelection() }, [detail])
   return <div className="map-card" aria-busy={loading}>
     <div className="map-heading"><div><span className="map-indicator" /> <h3>{TEST_LAYOUT ? 'Plano de prueba' : 'Plano de la farmacia'}</h3></div>
       <span>{mode === 'live' ? 'Seguimiento en vivo' : 'Reproducción'}{heat ? ' · mapa de calor' : ''}</span>
     </div>
-    <div className="map-stage" role="region" aria-label="Plano desplazable" tabIndex={0}>
+    <div className="map-toolbar" role="group" aria-label="Vista del plano">
+      <button type="button" aria-pressed={!detail} onClick={() => setDetail(false)}>Ajustar plano</button>
+      <button type="button" aria-pressed={detail} onClick={() => setDetail(true)}>Ver detalle</button>
+      {mode === 'live' && <button type="button" disabled={!canCenter} onClick={centerSelection}>Centrar selección</button>}
+    </div>
+    <p id={hint} className="map-hint">{detail ? 'Detalle · desplázate por el plano con las barras o las flechas del teclado.' : 'Vista general · abre el detalle para leer todas las zonas.'}</p>
+    <div ref={stage} className="map-stage" data-view={detail ? 'detail' : 'fit'} role="region" aria-label="Plano desplazable" aria-describedby={hint} tabIndex={0}>
       {children}
     </div>
     {emptyState}

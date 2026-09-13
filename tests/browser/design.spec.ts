@@ -113,3 +113,34 @@ for (const theme of ['light', 'dark']) {
     expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, reason: n.failureSummary })) }))).toEqual([])
   })
 }
+
+for (const width of [1440, 1024, 390]) {
+  test(`map labels and selection targets stay legible at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 })
+    const sockets = await openApp(page)
+    for (const [tag, x] of [['T0', 0.1], ['T1', 27.8]] as const) {
+      sockets.values().next().value!.send(JSON.stringify({ tag, ts: '2026-09-13T12:00:00Z', x, y: 2, quality: 0.1, n_anchors: 4 }))
+    }
+    await expect(page.locator('.tag-hit-target')).toHaveCount(2)
+    await expect.poll(() => page.locator('.tag-hit-target').first().evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(31)
+    const textSizes = await page.locator('svg text').evaluateAll(nodes => nodes.map(node =>
+      parseFloat(getComputedStyle(node).fontSize) * Math.hypot((node as SVGTextElement).getScreenCTM()!.a, (node as SVGTextElement).getScreenCTM()!.b)))
+    expect(Math.min(...textSizes)).toBeGreaterThan(11.8)
+    await page.getByRole('button', { name: 'Ver detalle' }).click()
+    await expect(page.locator('.map-stage')).toHaveAttribute('data-view', 'detail')
+    expect(await page.locator('svg').evaluate(node => node.clientWidth)).toBeGreaterThan(1800)
+    const tag = page.getByRole('button', { name: /^Seleccionar T1/ })
+    await tag.focus()
+    await tag.press('Enter')
+    await expect(tag).toHaveAttribute('aria-pressed', 'true')
+    await expect(tag.locator('.tag-focus-ring')).toHaveCSS('visibility', 'visible')
+    await expect.poll(() => page.locator('.map-stage').evaluate(node => node.scrollLeft)).toBeGreaterThan(0)
+    await page.clock.runFor(11000)
+    await expect(tag).toHaveAttribute('aria-label', /Última posición/)
+    await page.screenshot({ path: `tmp/design-detail-${width}.png`, fullPage: true })
+    await page.getByRole('button', { name: 'Ajustar plano' }).click()
+    await expect(page.locator('.map-stage')).toHaveAttribute('data-view', 'fit')
+    expect(await page.locator('svg').evaluate(node => node.clientWidth)).toBeLessThan(width)
+    await page.screenshot({ path: `tmp/design-fit-${width}.png`, fullPage: true })
+  })
+}

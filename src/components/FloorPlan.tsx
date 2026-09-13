@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ENTRANCE, FLOOR, TEST_LAYOUT, ZONES, qualityLevel, tagColor } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample } from '../types'
 import { isContinuous } from '../lib/trajectory'
@@ -29,19 +29,19 @@ function heatColor(t: number): string {
   return `color-mix(in oklab, var(--heat-low), var(--heat-high) ${t * 100}%)`
 }
 
-const TagLabel = memo(function TagLabel({ label, color, markerX, mapWidth }: {
-  label: string; color: string; markerX: number; mapWidth: number
+const TagLabel = memo(function TagLabel({ label, color, markerX, mapWidth, scale }: {
+  label: string; color: string; markerX: number; mapWidth: number; scale: number
 }) {
   const ref = useRef<SVGTextElement>(null)
   useLayoutEffect(() => {
     const node = ref.current
     if (!node) return
     const width = node.getComputedTextLength()
-    const left = markerX + 14 + width <= mapWidth - 8
-      ? markerX + 14 : Math.max(8, markerX - 14 - width)
+    const left = markerX + 20 * scale + width <= mapWidth - 8 * scale
+      ? markerX + 20 * scale : Math.max(8 * scale, markerX - 20 * scale - width)
     node.setAttribute('x', String(left - markerX))
-  }, [label, markerX, mapWidth])
-  return <text ref={ref} x={14} y={4} fill={color} fontSize={11} fontWeight={600} fontFamily="var(--font-mono)">
+  }, [label, markerX, mapWidth, scale])
+  return <text className="map-label" ref={ref} x={20 * scale} y={4 * scale} fill={color} fontSize={14 * scale} fontWeight={600} fontFamily="var(--font-mono)">
     {label}
   </text>
 })
@@ -67,6 +67,18 @@ export function FloorPlan(p: Props) {
   const Y = (y: number) => (bounds.minY + bounds.h - y) * SCALE
   const W = bounds.w * SCALE
   const H = bounds.h * SCALE
+  const svg = useRef<SVGSVGElement>(null)
+  const [width, setWidth] = useState(W)
+  useLayoutEffect(() => {
+    const node = svg.current
+    if (!node) return
+    const measure = () => { if (node.clientWidth > 0) setWidth(node.clientWidth) }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [W])
+  const uiScale = Math.max(1, W / width)
 
   const gridLines = useMemo(() => {
     const v: number[] = []
@@ -85,11 +97,12 @@ export function FloorPlan(p: Props) {
 
   return (
     <svg
+      ref={svg}
       viewBox={`0 0 ${W} ${H}`}
-      className="h-full w-full"
+      className="floor-plan"
       role="group"
       aria-label={TEST_LAYOUT ? 'Área de prueba con posiciones UWB' : 'Plano de la farmacia con posiciones de empleados'}
-      style={{ maxHeight: '100%' }}
+      style={{ '--plan-width': `${W}px` } as CSSProperties}
     >
       {gridLines.v.map((x) => (
         <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="var(--map-grid)" />
@@ -122,7 +135,7 @@ export function FloorPlan(p: Props) {
             x={X(-0.35)}
             y={Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)}
             fill="var(--color-muted)"
-            fontSize={10}
+            fontSize={12 * uiScale}
             textAnchor="middle"
             transform={`rotate(-90 ${X(-0.35)} ${Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)})`}
             style={{ textTransform: 'uppercase', letterSpacing: '0.12em' }}
@@ -148,12 +161,12 @@ export function FloorPlan(p: Props) {
             stroke={hoverZone === z.id ? 'var(--color-accent)' : 'var(--map-zone-line)'}
             strokeDasharray="5 4"
           />
-          {z.w * SCALE >= 90 && (
+          {z.w * SCALE / uiScale >= z.name.length * 8 + 16 && (
             <text
-              x={X(z.x) + 7}
-              y={Y(z.y + z.h) + 15}
+              x={X(z.x) + 8 * uiScale}
+              y={Y(z.y + z.h) + 18 * uiScale}
               fill={hoverZone === z.id ? 'var(--color-accent)' : 'var(--color-muted)'}
-              fontSize={10}
+              fontSize={13 * uiScale}
               style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
             >
               {z.name}
@@ -196,7 +209,9 @@ export function FloorPlan(p: Props) {
             stroke="var(--color-accent)"
             strokeWidth={1.2}
           />
-          <text x={X(a.x) + 10} y={Y(a.y) + 4} fill="var(--color-muted)" fontSize={12} fontFamily="var(--font-mono)">
+          <text className="map-label" x={X(a.x) + (a.x > (bounds.areaMaxX + bounds.areaMinX) / 2 ? -10 : 10) * uiScale}
+            textAnchor={a.x > (bounds.areaMaxX + bounds.areaMinX) / 2 ? 'end' : 'start'}
+            y={Y(a.y) + 4 * uiScale} fill="var(--color-muted)" fontSize={13 * uiScale} fontFamily="var(--font-mono)">
             {a.id}
           </text>
           <title>{`${a.id} · (${a.x}, ${a.y}, ${a.z} m)${a.description ? ' · ' + a.description : ''}`}</title>
@@ -236,6 +251,7 @@ export function FloorPlan(p: Props) {
               tabIndex={0}
               aria-label={`Seleccionar ${label}`}
               aria-pressed={selected}
+              onFocus={event => event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
@@ -245,10 +261,15 @@ export function FloorPlan(p: Props) {
               style={{ cursor: 'pointer', transition: 'transform 0.9s linear' }}
               transform={`translate(${X(pos.x)} ${Y(pos.y)})`}
             >
+              <g transform={`scale(${uiScale})`}>
+              <circle className="tag-hit-target" r={16} fill="transparent" />
+              <circle className="tag-focus-ring" r={17} fill="none" stroke="var(--color-fg)" strokeWidth={2} />
               {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
               <circle r={selected ? 8 : 6.5} fill={color} stroke="var(--map-background)" strokeWidth={2} />
               <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
-              <TagLabel label={label} color={color} markerX={X(pos.x)} mapWidth={W} />
+              </g>
+              <TagLabel label={width < 600 ? pos.tag : uiScale > 1.5 ? (stale ? `${pos.tag} · Sin actualizar` : pos.tag) : label}
+                color={color} markerX={X(pos.x)} mapWidth={W} scale={uiScale} />
               <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
             </g>
           )
@@ -256,8 +277,10 @@ export function FloorPlan(p: Props) {
 
       {p.mode === 'replay' && p.replayMarker && (
         <g transform={`translate(${X(p.replayMarker.x)} ${Y(p.replayMarker.y)})`}>
+          <g transform={`scale(${uiScale})`}>
           <circle className="tag-pulse" r={9} fill="none" stroke="var(--color-accent)" strokeWidth={1.5} />
           <circle r={8} fill="var(--color-accent)" stroke="var(--map-background)" strokeWidth={2} />
+          </g>
         </g>
       )}
     </svg>

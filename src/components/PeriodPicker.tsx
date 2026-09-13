@@ -37,7 +37,7 @@ export function PeriodPicker({ value, onChange }: { value: Period; onChange: (pe
     onChange({ start, end })
   }
   return <div className="period-picker">
-    <div className="period-presets" aria-label="Periodos rápidos">
+    <div className="period-presets" role="group" aria-label="Periodos rápidos">
       {([['today', 'Hoy'], ['yesterday', 'Ayer'], ['week', '7 días']] as const).map(([key, label]) => (
         <button key={key} type="button" onClick={() => preset(key)}>{label}</button>
       ))}
