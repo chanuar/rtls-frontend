@@ -23,8 +23,8 @@ export function LiveInfo({ pos, stale = false, now = Date.now() }: { pos: LivePo
   )
 }
 
-export function ReplayStats({ stats }: { stats: TrajectoryStats | null }) {
-  if (!stats) return <p className="text-muted">Carga una jornada para ver sus estadísticas.</p>
+export function ReplayStats({ stats, emptyMessage }: { stats: TrajectoryStats | null; emptyMessage: string | null }) {
+  if (!stats) return <p className="text-muted">{emptyMessage}</p>
   const maxZone = Math.max(1, ...stats.perZoneS.map((z) => z.seconds))
   return (
     <div className="flex flex-col gap-3">

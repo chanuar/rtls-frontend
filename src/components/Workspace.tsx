@@ -23,7 +23,8 @@ export function Workspace({ page }: { page: Page }) {
 
   const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), demo])
   const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[] } | null>(null)
-  const trajectory = loaded?.key === queryKey ? loaded.trajectory : EMPTY_SAMPLES
+  const historyLoaded = loaded?.key === queryKey
+  const trajectory = historyLoaded ? loaded.trajectory : EMPTY_SAMPLES
   const [heatResult, setHeatResult] = useState<{ source: typeof loaded; heat: Heatmap | null; error: string | null } | null>(null)
   const currentHeat = loaded?.key === queryKey && heatResult?.source === loaded ? heatResult : null
   const heat = currentHeat?.heat ?? null
@@ -45,6 +46,12 @@ export function Workspace({ page }: { page: Page }) {
   const request = useRef(0)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const historyMessage = loading ? 'Cargando jornada…' : loadError ?? (
+    !historyLoaded ? 'Selecciona un tag y un periodo, y pulsa «Cargar jornada».'
+      : trajectory.length === 0 ? 'No hay posiciones en este periodo. Prueba otro periodo.'
+        : trajectory.length === 1 ? 'Solo hay una muestra: se muestra la posición observada, pero no hay un intervalo para reproducir ni calcular estadísticas.'
+          : null
+  )
   useEffect(() => {
     request.current = request.current + 1
     setLoading(false)
@@ -73,7 +80,6 @@ export function Workspace({ page }: { page: Page }) {
         const traj = await fetchPositions(selectedTag, period.start, period.end)
         if (id !== request.current) return
         setLoaded({ key: queryKey, trajectory: traj })
-        if (traj.length === 0) setLoadError('No hay posiciones en ese periodo. Prueba otro o arranca el simulador.')
       }
     } catch (err) {
       if (id === request.current) setLoadError(err instanceof Error ? err.message : 'Error al cargar los datos')
@@ -148,7 +154,7 @@ export function Workspace({ page }: { page: Page }) {
                 <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">
                   {mode === 'live' ? `Estado de ${selectedTag ?? '—'}` : 'Estadísticas de la jornada'}
                 </p>
-                {mode === 'live' ? <SelectedLiveInfo /> : <ReplayStats stats={stats} />}
+                {mode === 'live' ? <SelectedLiveInfo /> : <ReplayStats stats={stats} emptyMessage={historyMessage} />}
               </section>
             </>
           )}
@@ -178,7 +184,7 @@ export function Workspace({ page }: { page: Page }) {
               status={demo ? 'demo' : 'online'} tags={tags} tagIds={tagIds} period={period} />
           )}
           <ReplayMap active={page === 'plan' && mode === 'replay'} samples={trajectory}
-            loading={loading} heat={showHeat ? heat : null} />
+            loading={loading} heat={showHeat ? heat : null} emptyMessage={historyMessage} />
         </main>
       </div>
   )

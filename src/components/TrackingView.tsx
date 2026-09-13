@@ -106,7 +106,7 @@ export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: numbe
               <div className="overview" role="group" aria-label="Resumen del sistema">
                 <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tagCount}</small></strong></div>
                 <div><span>Anchors configurados</span><strong>{anchorCount}<small> referencias</small></strong></div>
-                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : sampleCount}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : ' posiciones'}</small></strong></div>
+                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : sampleCount}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : sampleCount === 1 ? ' posición' : ' posiciones'}</small></strong></div>
               </div>
   )
 }
@@ -161,8 +161,8 @@ export function LiveMap({ loading, heat }: { loading: boolean; heat: Heatmap | n
   </MapCard>
 }
 
-export function ReplayMap({ active, samples, loading, heat }: {
-  active: boolean; samples: Sample[]; loading: boolean; heat: Heatmap | null
+export function ReplayMap({ active, samples, loading, heat, emptyMessage }: {
+  active: boolean; samples: Sample[]; loading: boolean; heat: Heatmap | null; emptyMessage: string | null
 }) {
   const anchors = useStore(s => s.anchors)
   const replay = useReplay(samples, active)
@@ -173,8 +173,8 @@ export function ReplayMap({ active, samples, loading, heat }: {
         mode="replay" replayPath={samples} replayMarker={replay.marker} replayTime={replay.cursor} heat={heat} />
     </MapCard>
     {samples.length > 1 ? <ReplayBar replay={replay} /> : (
-      <div className="border-t border-line px-5 py-3 text-[13px] text-muted">
-        Selecciona un empleado y un periodo, y pulsa «Cargar jornada» para reproducir sus movimientos.
+      <div role="status" className="border-t border-line px-5 py-3 text-[13px] text-muted">
+        {emptyMessage}
       </div>
     )}
   </>

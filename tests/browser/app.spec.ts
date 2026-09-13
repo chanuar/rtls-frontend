@@ -90,6 +90,37 @@ test('invalid live messages explain rejection and cannot block the next valid po
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
+test('history distinguishes idle, loading, empty, single-sample, ready and error states', async ({ page }) => {
+  await setup(page)
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Selecciona un tag' })).toBeVisible()
+  let count = 0, release = () => {}
+  await page.route('**/positions/*', async route => {
+    await new Promise<void>(resolve => { release = resolve })
+    await route.fulfill({ json: samples.slice(0, count) })
+  })
+  for (const [size, message] of [[0, 'No hay posiciones'], [1, 'Solo hay una muestra']] as const) {
+    count = size
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await expect(page.getByRole('status').filter({ hasText: 'Cargando jornada' })).toBeVisible()
+    release()
+    await expect(page.getByRole('status').filter({ hasText: message })).toBeVisible()
+    await expect(page.getByRole('slider')).toHaveCount(0)
+    await expect(page.getByRole('complementary')).not.toContainText('0 m')
+  }
+  await page.screenshot({ path: 'tmp/fix-single-sample.png', fullPage: true })
+  count = 2
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Cargando jornada' })).toBeVisible()
+  release()
+  await expect(page.getByRole('slider')).toBeVisible()
+  await page.route('**/positions/*', route => route.fulfill({ status: 503 }))
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('503')
+  await expect(page.getByRole('slider')).toHaveCount(0)
+  await expect(page.getByRole('status').filter({ hasText: 'Selecciona un tag' })).toHaveCount(0)
+})
+
 test('history ignores an old response after changing tag or period', async ({ page }) => {
   await setup(page)
   let release: () => void = () => {}
