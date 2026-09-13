@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export interface Period {
   start: Date
   end: Date
@@ -25,7 +27,15 @@ function localInput(date: Date): string {
 }
 
 export function PeriodPicker({ value, onChange }: { value: Period; onChange: (period: Period) => void }) {
+  const [draft, setDraft] = useState(() => ({ value, start: localInput(value.start), end: localInput(value.end) }))
+  if (draft.value !== value) setDraft({ value, start: localInput(value.start), end: localInput(value.end) })
   const valid = isValidPeriod(value)
+  function edit(key: 'start' | 'end', text: string) {
+    const date = new Date(text)
+    const next = { ...value, [key]: localInput(date) === text && text !== '' ? date : new Date(NaN) }
+    setDraft({ ...draft, value: next, [key]: text })
+    onChange(next)
+  }
   function preset(kind: 'today' | 'yesterday' | 'week') {
     const now = new Date()
     if (kind === 'today') return onChange(todayPeriod(now))
@@ -45,9 +55,9 @@ export function PeriodPicker({ value, onChange }: { value: Period; onChange: (pe
     {([['start', 'Desde'], ['end', 'Hasta']] as const).map(([key, label]) => (
       <label key={key} className="period-field">
         <span>{label}</span>
-        <input type="datetime-local" value={localInput(value[key])} required
+        <input type="datetime-local" value={draft[key]} required
           aria-invalid={!valid} aria-describedby={valid ? 'period-help' : 'period-error'}
-          onChange={event => onChange({ ...value, [key]: new Date(event.target.value) })} />
+          onChange={event => edit(key, event.target.value)} />
       </label>
     ))}
     <p id="period-help" className="field-hint">Fecha y hora local de este navegador.</p>

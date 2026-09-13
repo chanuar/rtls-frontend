@@ -33,7 +33,12 @@ test('native dates expose labels, accept keyboard changes and send local ranges 
   expect(query.get('start')).toBe('2026-08-31T22:30:00.000Z')
   expect(query.get('end')).toBe('2026-08-31T23:30:00.000Z')
   await start.focus()
-  await start.press('ArrowUp')
+  if (await start.evaluate(node => (node as HTMLInputElement).type === 'text')) {
+    await start.press('End')
+    await start.press('Backspace')
+    await start.press('1')
+    await expect(start).toHaveValue('2026-08-31T23:31')
+  } else await start.press('ArrowUp')
   await expect(start).not.toHaveValue('2026-08-31T23:30')
   await start.fill('')
   await expect(page.getByRole('alert').filter({ hasText: 'Completa ambas fechas' })).toBeVisible()
@@ -43,6 +48,28 @@ test('native dates expose labels, accept keyboard changes and send local ranges 
   await page.getByRole('button', { name: 'Hoy', exact: true }).click()
   await expect(start).toHaveValue('2026-09-13T00:00')
   await expect(page.getByRole('button', { name: 'Analizar periodo' })).toBeEnabled()
+})
+
+test('partial date edits remain editable and impossible local dates cannot be submitted', async ({ page }) => {
+  await openApp(page)
+  const start = page.getByLabel('Desde', { exact: true })
+  test.skip(await start.evaluate(node => (node as HTMLInputElement).type !== 'text'), 'This engine provides a native date picker; the preceding test covers it.')
+  await start.fill('')
+  await start.pressSequentially('2026-08-31T23:31')
+  await expect(start).toHaveValue('2026-08-31T23:31')
+  await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeEnabled()
+  const request = page.waitForRequest('**/positions/T0?*')
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  expect(new URL((await request).url()).searchParams.get('start')).toBe('2026-08-31T22:31:00.000Z')
+  for (const invalid of ['2026-02-30T12:00', '2026-03-29T01:30', '2026-08-31T23:', '2026-08-31T23:31Z']) {
+    await start.fill(invalid)
+    await expect(start).toHaveValue(invalid)
+    await expect(start).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeDisabled()
+  }
+  await page.getByRole('button', { name: 'Hoy', exact: true }).click()
+  await expect(start).toHaveValue('2026-09-13T00:00')
+  await expect(start).toHaveAttribute('aria-invalid', 'false')
 })
 
 test('map controls, replay time and analysis results expose accessible state without decorative motion', async ({ page }) => {
