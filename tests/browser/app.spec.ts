@@ -24,6 +24,65 @@ async function setup(page: Page) {
   return sockets
 }
 
+test('analysis cancels abandoned periods and sibling requests after an error, then retries', async ({ page }) => {
+  await setup(page)
+  await page.evaluate(() => {
+    const signals: AbortSignal[] = [], original = window.fetch
+    window.fetch = (input, init) => {
+      if (String(input).includes('/positions/')) signals.push(init!.signal!)
+      return original(input, init)
+    }
+    Object.assign(window, { analysisSignals: signals })
+  })
+  const pending: import('@playwright/test').Route[] = []
+  await page.route('**/positions/*', route => { pending.push(route) })
+  await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+  for (const action of ['period', 'leave', 'error']) {
+    await page.getByRole('button', { name: 'Analizar periodo' }).click()
+    await expect.poll(() => pending.length).toBe(2)
+    expect(await page.evaluate(() => (window as any).analysisSignals.slice(-2).every((s: AbortSignal) => !s.aborted))).toBe(true)
+    if (action === 'period') await page.getByRole('button', { name: 'Ayer', exact: true }).click()
+    else if (action === 'leave') {
+      await page.getByRole('button', { name: 'Plano', exact: true }).click()
+      await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+    } else {
+      await pending.shift()!.fulfill({ status: 503 })
+      await expect(page.getByRole('alert')).toContainText('503')
+    }
+    await expect.poll(() => page.evaluate(() => (window as any).analysisSignals.every((s: AbortSignal) => s.aborted))).toBe(true)
+    for (const route of pending.splice(0)) await route.fulfill({ json: samples })
+    await expect(page.getByRole('button', { name: 'Analizar periodo' })).toBeEnabled()
+    await expect(page.getByRole('table')).toHaveCount(0)
+    if (action !== 'error') await expect(page.getByRole('alert')).toHaveCount(0)
+  }
+  await page.getByRole('button', { name: 'Hoy', exact: true }).click()
+  await page.route('**/positions/*', route => route.fulfill({ json: samples }))
+  await page.getByRole('button', { name: 'Analizar periodo' }).click()
+  await expect(page.getByRole('table')).toContainText('10 s')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
+test('analysis summaries distinguish empty, limited and sufficient observed data', async ({ page }) => {
+  await setup(page)
+  await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+  if (process.env.TEST_LAYOUT === 'true') await expect(page.getByText(/Sin zonas configuradas/)).toBeVisible()
+  for (const [count, step, message, duration, stops] of [
+    [0, 1, 'Sin datos: no hay posiciones', '0 s', '—'],
+    [1, 1, 'Datos insuficientes', '0 s', '—'],
+    [61, 1, 'Datos insuficientes', '1 min', '1'],
+    [361, 5, 'Sin hallazgos en las comprobaciones disponibles', '30 min', '1'],
+  ] as const) {
+    const data = Array.from({ length: count }, (_, i) => ({ ...samples[0],
+      ts: new Date(today.getTime() - 3600000 + i * step * 1000).toISOString(), x: -1, y: -1,
+    }))
+    await page.route('**/positions/*', route => route.fulfill({ json: data }))
+    await page.getByRole('button', { name: 'Analizar periodo' }).click()
+    await expect(page.getByText(message, { exact: false })).toBeVisible()
+    const cells = page.getByRole('row').filter({ has: page.getByRole('rowheader', { name: /^T0/ }) }).getByRole('cell')
+    await expect(cells).toHaveText([String(count), duration, count > 1 ? '0.0 m' : '—', stops])
+  }
+})
+
 test('real React loads history, changes identity and cleans up StrictMode resources', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

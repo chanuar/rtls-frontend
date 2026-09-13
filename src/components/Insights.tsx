@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ZONES, tagColor, zoneName } from '../config'
 import { fetchPositions } from '../lib/api'
 import { demoTrajectory } from '../lib/demo'
@@ -19,12 +19,20 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [summaries, setSummaries] = useState<ReturnType<typeof analyzePeriod>['summaries']>([])
+  const request = useRef<AbortController | null>(null)
+  useEffect(() => () => {
+    request.current?.abort()
+    request.current = null
+  }, [])
 
   async function analyze() {
     if (!isValidPeriod(period)) {
       setError('El final debe ser posterior al inicio.')
       return
     }
+    request.current?.abort()
+    const controller = new AbortController()
+    request.current = controller
     setLoading(true)
     setError(null)
     setInsights(null)
@@ -35,17 +43,23 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
         for (const t of tags) data[t.id] = demoTrajectory(t.id, period.start, period.end)
       } else {
         const results = await Promise.all(
-          tags.map(async (t) => [t.id, await fetchPositions(t.id, period.start, period.end)] as const),
+          tags.map(async (t) => [t.id, await fetchPositions(t.id, period.start, period.end, controller.signal)] as const),
         )
         for (const [id, samples] of results) data[id] = samples
       }
+      if (controller.signal.aborted) return
       const result = analyzePeriod(data, tags)
       setInsights(result.insights)
       setSummaries(result.summaries)
     } catch (err) {
+      if (controller.signal.aborted) return
+      controller.abort()
       setError(err instanceof Error ? err.message : 'Error al analizar el periodo')
     } finally {
-      setLoading(false)
+      if (request.current === controller) {
+        request.current = null
+        setLoading(false)
+      }
     }
   }
 

@@ -54,3 +54,22 @@ test('REST explains transport and JSON failures in Spanish without hiding unexpe
   const client = load('src/lib/api.ts', {}, { AbortSignal, DOMException, fetch: async () => { throw unexpected } })
   await assert.rejects(client.fetchAnchors(), error => error === unexpected)
 })
+
+test('history requests combine caller cancellation with the existing timeout', async () => {
+  for (const cause of ['caller', 'timeout']) {
+    const caller = new AbortController(), timeout = new AbortController()
+    const client = load('src/lib/api.ts', {}, {
+      DOMException,
+      AbortSignal: { timeout: () => timeout.signal, any: AbortSignal.any.bind(AbortSignal) },
+      fetch: async (_, { signal }) => {
+        assert.equal(signal.aborted, false)
+        if (cause === 'caller') caller.abort()
+        else timeout.abort(new DOMException('Timed out', 'TimeoutError'))
+        assert.equal(signal.aborted, true)
+        throw signal.reason
+      },
+    })
+    await assert.rejects(client.fetchPositions('T0', start, end, caller.signal), error =>
+      cause === 'caller' ? error === caller.signal.reason : /servidor ha tardado demasiado/.test(error.message))
+  }
+})

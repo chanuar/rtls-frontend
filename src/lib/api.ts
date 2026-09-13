@@ -34,10 +34,11 @@ function heatmap(value: unknown): value is Heatmap {
       finite(b.count) && Number.isSafeInteger(b.count) && b.count > 0)
 }
 
-async function get<T>(path: string, resource: string, valid: (value: unknown) => value is T): Promise<T> {
+async function get<T>(path: string, resource: string, valid: (value: unknown) => value is T, signal?: AbortSignal): Promise<T> {
   let value: unknown
   try {
-    const res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(15000) })
+    const timeout = AbortSignal.timeout(15000)
+    const res = await fetch(`${API_URL}${path}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout })
     if (!res.ok) throw new Error(`No se ha podido cargar ${resource} (HTTP ${res.status}). Inténtalo de nuevo.`)
     value = await res.json()
   } catch (error) {
@@ -62,12 +63,13 @@ function periodQuery(start: Date, end: Date): string {
   return `start=${start.toISOString()}&end=${end.toISOString()}`
 }
 
-export const fetchPositions = (tagId: string, start: Date, end: Date) =>
+export const fetchPositions = (tagId: string, start: Date, end: Date, signal?: AbortSignal) =>
   get(
     `/positions/${encodeURIComponent(tagId)}?${periodQuery(start, end)}`,
     'el histórico',
     (value): value is Sample[] => samples(value) && value.every(s =>
       Date.parse(s.ts) >= start.getTime() && Date.parse(s.ts) <= end.getTime()),
+    signal,
   )
 
 export const fetchHeatmap = (start: Date, end: Date, cell: number, tagId?: string) =>
