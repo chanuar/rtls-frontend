@@ -156,3 +156,41 @@ test('unchanged anchors publish no state and preserve geometry identity', async 
   unsubscribe()
   r.useStore.getState().stop()
 })
+
+test('resource errors persist independently and failed tag refreshes retry', async () => {
+  let failTags = false, failAnchors = false, tagRequests = 0
+  const r = runtime({
+    fetchTags: async () => {
+      tagRequests++
+      if (failTags) throw Error('tags offline')
+      return [{ id: 'T0', employee: 'Ana', active: true }]
+    },
+    fetchAnchors: async () => { if (failAnchors) throw Error('anchors offline'); return [] },
+  })
+  await r.useStore.getState().init()
+  failTags = true
+  r.sockets[0].onopen()
+  await new Promise(resolve => setImmediate(resolve))
+  const refresh = [...r.intervals.values()].find(t => t.ms === 5000).fn
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.match(r.useStore.getState().tagError, /tags/)
+  assert.equal(r.useStore.getState().anchorError, null)
+  assert.equal(tagRequests, 3)
+
+  failAnchors = true
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.match(r.useStore.getState().anchorError, /anchors/)
+  failTags = false
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().tagError, null)
+  assert.match(r.useStore.getState().anchorError, /anchors/)
+  failAnchors = false
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().anchorError, null)
+  assert.equal(tagRequests, 5)
+  r.useStore.getState().stop()
+})

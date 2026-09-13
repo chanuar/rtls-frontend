@@ -9,6 +9,8 @@ const TRAIL_LENGTH = 40
 interface Store {
   status: ConnectionStatus
   connectionError: string | null
+  anchorError: string | null
+  tagError: string | null
   anchors: Anchor[]
   tags: TagInfo[]
   live: Record<string, LivePosition>
@@ -30,6 +32,8 @@ let generation = 0
 export const useStore = create<Store>((set, get) => ({
   status: 'connecting',
   connectionError: null,
+  anchorError: null,
+  tagError: null,
   anchors: [],
   tags: [],
   live: {},
@@ -39,7 +43,7 @@ export const useStore = create<Store>((set, get) => ({
   init: async () => {
     get().stop()
     const current = generation
-    set({ status: 'connecting', connectionError: null })
+    set({ status: 'connecting', connectionError: null, anchorError: null, tagError: null })
     if (DEMO_MODE) {
       set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
       stopDemo = startDemoLive((p) => get()._apply(p))
@@ -107,15 +111,20 @@ function connectWs(get: () => Store) {
     void refreshAnchors()
     void refreshTags()
   }
+  let refreshingTags = false
   async function refreshTags() {
+    if (refreshingTags) return
+    refreshingTags = true
     try {
       const tags = await fetchTags()
       if (ws !== socket) return
       const selected = get().selectedTag
-      useStore.setState({ tags, selectedTag: tags.some(t => t.id === selected) ? selected : tags[0]?.id ?? null })
+      useStore.setState({ tags, selectedTag: tags.some(t => t.id === selected) ? selected : tags[0]?.id ?? null, tagError: null })
     } catch (error) {
       if (ws !== socket) return
-      useStore.setState({ connectionError: error instanceof Error ? error.message : 'Error al actualizar los tags.' })
+      useStore.setState({ tagError: error instanceof Error ? error.message : 'Error al actualizar los tags.' })
+    } finally {
+      refreshingTags = false
     }
   }
   let refreshing = false
@@ -128,19 +137,22 @@ function connectWs(get: () => Store) {
       const previous = get().anchors
       const changed = anchors.length !== previous.length || anchors.some(a =>
         !previous.some(b => a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z))
-      if (changed) useStore.setState({ anchors, live: {}, trails: {}, connectionError: null })
+      if (changed) useStore.setState({ anchors, live: {}, trails: {}, anchorError: null })
       else if (anchors.some(a => !previous.some(b => a.id === b.id && a.description === b.description))) {
-        useStore.setState({ anchors, connectionError: null })
-      } else if (get().connectionError !== null) useStore.setState({ connectionError: null })
+        useStore.setState({ anchors, anchorError: null })
+      } else if (get().anchorError !== null) useStore.setState({ anchorError: null })
     } catch (error) {
       if (ws !== socket) return
-      useStore.setState({ connectionError: error instanceof Error ? error.message : 'Error al actualizar los anchors.' })
+      useStore.setState({ anchorError: error instanceof Error ? error.message : 'Error al actualizar los anchors.' })
       // Keep the last map during an API outage; retry at the next interval.
     } finally {
       refreshing = false
     }
   }
-  anchorTimer = window.setInterval(() => void refreshAnchors(), 5000)
+  anchorTimer = window.setInterval(() => {
+    void refreshAnchors()
+    if (get().tagError) void refreshTags()
+  }, 5000)
   ws.onmessage = (ev) => {
     try {
       const p = JSON.parse(ev.data as string) as LivePosition

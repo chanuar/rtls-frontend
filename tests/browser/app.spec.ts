@@ -51,6 +51,27 @@ test('real React loads history, changes identity and cleans up StrictMode resour
   expect(errors).toEqual([])
 })
 
+test('catalogue error remains visible through anchor refreshes until tags recover', async ({ page }) => {
+  const sockets = await setup(page)
+  let fail = true, requests = 0
+  await page.route('**/tags', route => {
+    requests++
+    return fail ? route.fulfill({ status: 503 })
+      : route.fulfill({ json: [{ id: 'T0', employee: 'Ana', active: true }] })
+  })
+  sockets.values().next().value!.close()
+  await page.clock.runFor(2100)
+  await expect(page.getByRole('alert')).toContainText('503')
+  const failedRequests = requests
+  await page.clock.runFor(5000)
+  await expect.poll(() => requests).toBeGreaterThan(failedRequests)
+  await expect(page.getByRole('alert')).toContainText('503')
+  fail = false
+  await page.clock.runFor(5000)
+  await expect(page.getByRole('button', { name: /Ana/ })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
 test('history ignores an old response after changing tag or period', async ({ page }) => {
   await setup(page)
   let release: () => void = () => {}
