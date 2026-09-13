@@ -34,16 +34,26 @@ function heatmap(value: unknown): value is Heatmap {
       finite(b.count) && Number.isSafeInteger(b.count) && b.count > 0)
 }
 
-async function get<T>(path: string, valid: (value: unknown) => value is T): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(15000) })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} en ${path}`)
-  const value: unknown = await res.json()
+async function get<T>(path: string, resource: string, valid: (value: unknown) => value is T): Promise<T> {
+  let value: unknown
+  try {
+    const res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(15000) })
+    if (!res.ok) throw new Error(`No se ha podido cargar ${resource} (HTTP ${res.status}). Inténtalo de nuevo.`)
+    value = await res.json()
+  } catch (error) {
+    if (error instanceof TypeError) throw new Error(`No se ha podido cargar ${resource}. Comprueba la conexión con el backend e inténtalo de nuevo.`)
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      throw new Error(`El servidor ha tardado demasiado en responder al cargar ${resource}. Inténtalo de nuevo.`)
+    }
+    if (error instanceof SyntaxError) throw new Error(`Respuesta inválida al cargar ${resource}: JSON inválido. Revisa el backend.`)
+    throw error
+  }
   if (!valid(value)) throw new Error(`Respuesta inválida de ${path.split('?')[0]}: revisa el formato, los valores y el orden temporal.`)
   return value
 }
 
-export const fetchAnchors = () => get('/anchors', anchors)
-export const fetchTags = () => get('/tags', tags)
+export const fetchAnchors = () => get('/anchors', 'los anchors', anchors)
+export const fetchTags = () => get('/tags', 'el catálogo de tags', tags)
 
 function periodQuery(start: Date, end: Date): string {
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
@@ -55,6 +65,7 @@ function periodQuery(start: Date, end: Date): string {
 export const fetchPositions = (tagId: string, start: Date, end: Date) =>
   get(
     `/positions/${encodeURIComponent(tagId)}?${periodQuery(start, end)}`,
+    'el histórico',
     (value): value is Sample[] => samples(value) && value.every(s =>
       Date.parse(s.ts) >= start.getTime() && Date.parse(s.ts) <= end.getTime()),
   )
@@ -63,5 +74,6 @@ export const fetchHeatmap = (start: Date, end: Date, cell: number, tagId?: strin
   get(
     `/heatmap?${periodQuery(start, end)}&cell=${cell}` +
       (tagId ? `&tag_id=${encodeURIComponent(tagId)}` : ''),
+    'el mapa de calor',
     (value): value is Heatmap => heatmap(value) && value.cell === cell,
   )

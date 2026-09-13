@@ -38,3 +38,19 @@ test('REST accepts empty responses, nullable sample fields and the backend contr
   assert.equal(await api(heat).fetchHeatmap(start, end, 0.5), heat)
   assert.equal((await api([]).fetchPositions('T0', start, end)).length, 0)
 })
+
+test('REST explains transport and JSON failures in Spanish without hiding unexpected errors', async () => {
+  const cases = [
+    [async () => ({ ok: false, status: 503, statusText: 'Service Unavailable' }), /el histórico \(HTTP 503\).*Inténtalo de nuevo/],
+    [async () => { throw new TypeError('Failed to fetch') }, /Comprueba la conexión con el backend/],
+    [async () => { throw new DOMException('Timed out', 'TimeoutError') }, /servidor ha tardado demasiado/],
+    [async () => ({ ok: true, json: async () => { throw new SyntaxError('Unexpected token') } }), /JSON inválido/],
+  ]
+  for (const [fetch, expected] of cases) {
+    const client = load('src/lib/api.ts', {}, { fetch, AbortSignal, TypeError, SyntaxError, DOMException })
+    await assert.rejects(client.fetchPositions('T0', start, end), expected)
+  }
+  const unexpected = new RangeError('unexpected failure')
+  const client = load('src/lib/api.ts', {}, { AbortSignal, DOMException, fetch: async () => { throw unexpected } })
+  await assert.rejects(client.fetchAnchors(), error => error === unexpected)
+})
