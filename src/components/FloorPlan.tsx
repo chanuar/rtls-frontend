@@ -47,6 +47,45 @@ const TagLabel = memo(function TagLabel({ label, color, markerX, mapWidth, scale
   </text>
 })
 
+function LiveTagMarker({ pos, stale, now, selected, tagIds, onSelect, map }: {
+  pos: LivePosition; stale: boolean; now: number; selected: boolean; tagIds: string[]; onSelect: (tag: string) => void
+  map: { x: number; y: number; width: number; pixelWidth: number; scale: number }
+}) {
+  const age = Math.max(0, Math.floor((now - Date.parse(pos.ts)) / 1000))
+  const label = stale ? `${pos.tag} · Última posición · hace ${age} s` : pos.tag
+  const color = stale ? 'var(--color-muted)' : tagColor(pos.tag, tagIds)
+  const q = stale ? 'var(--color-warn)' : QUALITY_COLOR[qualityLevel(pos.quality)]
+  return (
+    <g
+      onClick={() => onSelect(pos.tag)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Seleccionar ${label}`}
+      aria-pressed={selected}
+      onFocus={event => event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onSelect(pos.tag)
+        }
+      }}
+      style={{ cursor: 'pointer', transition: 'transform 0.9s linear' }}
+      transform={`translate(${map.x} ${map.y})`}
+    >
+      <g transform={`scale(${map.scale})`}>
+      <circle className="tag-hit-target" r={16} fill="transparent" />
+      <circle className="tag-focus-ring" r={17} fill="none" stroke="var(--color-fg)" strokeWidth={2} />
+      {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
+      <circle r={selected ? 8 : 6.5} fill={color} stroke="var(--map-background)" strokeWidth={2} />
+      <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
+      </g>
+      <TagLabel label={map.pixelWidth < 600 ? pos.tag : map.scale > 1.5 ? (stale ? `${pos.tag} · Sin actualizar` : pos.tag) : label}
+        color={color} markerX={map.x} mapWidth={map.width} scale={map.scale} />
+      <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
+    </g>
+  )
+}
+
 export function FloorPlan(p: Props) {
   const [hoverZone, setHoverZone] = useState<string | null>(null)
 
@@ -255,45 +294,11 @@ export function FloorPlan(p: Props) {
         </text>
       ))}
 
-      {p.mode === 'live' &&
-        Object.values(p.live).map((pos) => {
-          const stale = p.freshTags !== undefined && !p.freshTags.includes(pos.tag)
-          const age = Math.max(0, Math.floor(((p.now ?? Date.now()) - Date.parse(pos.ts)) / 1000))
-          const label = stale ? `${pos.tag} · Última posición · hace ${age} s` : pos.tag
-          const color = stale ? 'var(--color-muted)' : tagColor(pos.tag, p.tagIds)
-          const selected = pos.tag === p.selectedTag
-          const q = stale ? 'var(--color-warn)' : QUALITY_COLOR[qualityLevel(pos.quality)]
-          return (
-            <g
-              key={pos.tag}
-              onClick={() => p.onSelect(pos.tag)}
-              role="button"
-              tabIndex={0}
-              aria-label={`Seleccionar ${label}`}
-              aria-pressed={selected}
-              onFocus={event => event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  p.onSelect(pos.tag)
-                }
-              }}
-              style={{ cursor: 'pointer', transition: 'transform 0.9s linear' }}
-              transform={`translate(${X(pos.x)} ${Y(pos.y)})`}
-            >
-              <g transform={`scale(${uiScale})`}>
-              <circle className="tag-hit-target" r={16} fill="transparent" />
-              <circle className="tag-focus-ring" r={17} fill="none" stroke="var(--color-fg)" strokeWidth={2} />
-              {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
-              <circle r={selected ? 8 : 6.5} fill={color} stroke="var(--map-background)" strokeWidth={2} />
-              <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
-              </g>
-              <TagLabel label={width < 600 ? pos.tag : uiScale > 1.5 ? (stale ? `${pos.tag} · Sin actualizar` : pos.tag) : label}
-                color={color} markerX={X(pos.x)} mapWidth={W} scale={uiScale} />
-              <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
-            </g>
-          )
-        })}
+      {p.mode === 'live' && Object.values(p.live).map(pos => (
+        <LiveTagMarker key={pos.tag} pos={pos} stale={p.freshTags !== undefined && !p.freshTags.includes(pos.tag)}
+          now={p.now ?? Date.now()} selected={pos.tag === p.selectedTag} tagIds={p.tagIds} onSelect={p.onSelect}
+          map={{ x: X(pos.x), y: Y(pos.y), width: W, pixelWidth: width, scale: uiScale }} />
+      ))}
 
       {p.mode === 'replay' && p.replayMarker && (
         <g transform={`translate(${X(p.replayMarker.x)} ${Y(p.replayMarker.y)})`}>
