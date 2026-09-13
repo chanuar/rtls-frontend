@@ -34,17 +34,14 @@ export function useReplay(samples: Sample[], active = true) {
       const now = performance.now()
       const dt = now - lastTick.current
       lastTick.current = now
-      setCursor((c) => {
-        const next = c + dt * speed
-        if (next >= range.end) {
-          setPlaying(false)
-          return range.end
-        }
-        return next
-      })
+      setCursor(c => Math.min(c + dt * speed, range.end))
     }, 66)
     return () => window.clearInterval(id)
   }, [active, playing, speed, range])
+
+  useEffect(() => {
+    if (range && cursor >= range.end) setPlaying(false)
+  }, [cursor, range])
 
   const marker = useMemo(() => positionAt(samples, cursor), [samples, cursor])
 
@@ -65,7 +62,10 @@ export function ReplayBar({ replay }: BarProps) {
   return (
     <div className="replay-controls">
       <button
-        onClick={() => setPlaying(!playing)}
+        onClick={() => {
+          if (!playing && cursor >= range.end) setCursor(range.start)
+          setPlaying(!playing)
+        }}
         aria-label={playing ? 'Pausar reproducción' : 'Reproducir jornada'}
         className="flex h-8 w-8 items-center justify-center rounded-md border border-line-2 bg-panel-2 text-accent hover:border-accent/50"
       >

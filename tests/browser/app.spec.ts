@@ -132,3 +132,21 @@ test('replay pauses when switching to live or analysis and stays paused on retur
     }
   }
 })
+
+test('replay can finish and play again in StrictMode without impure updater warnings', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  await setup(page)
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  const slider = page.getByRole('slider')
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole('button', { name: 'Reproducir jornada' }).click()
+    await expect(page.getByRole('button', { name: 'Pausar reproducción' })).toBeVisible()
+    await expect(slider).toHaveValue(String(Date.parse(samples[0].ts)))
+    await page.clock.runFor(1000)
+    await expect(page.getByRole('button', { name: 'Reproducir jornada' })).toBeVisible()
+    await expect(slider).toHaveValue(String(Date.parse(samples.at(-1)!.ts)))
+  }
+  expect(errors).toEqual([])
+})
