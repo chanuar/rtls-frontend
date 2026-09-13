@@ -74,7 +74,7 @@ export default function App() {
   }, [init])
 
   const tagIds = useMemo(() => tags.map((t) => t.id), [tags])
-  const replay = useReplay(trajectory)
+  const replay = useReplay(trajectory, page === 'plan' && mode === 'replay')
   const stats = useMemo(() => (trajectory.length > 1 ? analyzeTrajectory(trajectory) : null), [trajectory])
 
   async function loadRange() {

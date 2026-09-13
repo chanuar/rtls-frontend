@@ -110,3 +110,25 @@ test('a delayed heatmap cannot attach to a different tag or period', async ({ pa
   await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(page.getByText('Cargando mapa de calor…')).toHaveCount(0)
 })
+
+test('replay pauses when switching to live or analysis and stays paused on return', async ({ page }) => {
+  await setup(page)
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await page.getByRole('button', { name: '×1', exact: true }).click()
+  for (const destination of ['En vivo', 'Análisis']) {
+    await page.getByRole('button', { name: 'Reproducir jornada' }).click()
+    await page.clock.runFor(150)
+    await page.getByRole('button', { name: destination, exact: true }).click()
+    await page.clock.runFor(1000)
+    await page.getByRole('button', { name: 'Plano', exact: true }).click()
+    await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Pausar reproducción' })).toHaveCount(0)
+    const slider = page.getByRole('slider')
+    if (await slider.count()) {
+      const cursor = await slider.inputValue()
+      await page.clock.runFor(1000)
+      await expect(slider).toHaveValue(cursor)
+    }
+  }
+})

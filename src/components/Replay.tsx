@@ -4,7 +4,7 @@ import type { Sample } from '../types'
 
 const SPEEDS = [1, 4, 16, 60]
 
-export function useReplay(samples: Sample[]) {
+export function useReplay(samples: Sample[], active = true) {
   const range = useMemo(() => {
     if (samples.length < 2) return null
     return {
@@ -24,7 +24,11 @@ export function useReplay(samples: Sample[]) {
   }, [range])
 
   useEffect(() => {
-    if (!playing || !range) return
+    if (!active) setPlaying(false)
+  }, [active])
+
+  useEffect(() => {
+    if (!active || !playing || !range) return
     lastTick.current = performance.now()
     const id = window.setInterval(() => {
       const now = performance.now()
@@ -40,7 +44,7 @@ export function useReplay(samples: Sample[]) {
       })
     }, 66)
     return () => window.clearInterval(id)
-  }, [playing, speed, range])
+  }, [active, playing, speed, range])
 
   const marker = useMemo(() => positionAt(samples, cursor), [samples, cursor])
 
