@@ -121,9 +121,9 @@ test('themes follow the system, persist explicit choices and apply before React 
   await openApp(page)
   const select = page.getByRole('combobox', { name: 'Tema' })
   await expect(select).toHaveValue('system')
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 24, 21)')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(18, 22, 29)')
   await page.emulateMedia({ colorScheme: 'light' })
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 246, 248)')
   await select.selectOption('dark')
   await expect(page.getByLabel('Desde', { exact: true })).toHaveCSS('color-scheme', 'dark')
   await page.reload()
@@ -134,7 +134,7 @@ test('themes follow the system, persist explicit choices and apply before React 
   await page.unroute('**/src/main.tsx')
   await page.reload()
   await select.selectOption('system')
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 246, 248)')
 })
 
 test('history summary identifies the local period and observed coverage without live metrics', async ({ page }) => {
@@ -189,9 +189,9 @@ test('theme selection remains usable when local storage is blocked', async ({ pa
   })
   await openApp(page)
   await page.getByRole('combobox', { name: 'Tema' }).selectOption('dark')
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 24, 21)')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(18, 22, 29)')
   await page.getByRole('combobox', { name: 'Tema' }).selectOption('light')
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 246, 248)')
   expect(errors).toEqual([])
 })
 

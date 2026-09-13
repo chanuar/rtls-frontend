@@ -73,9 +73,7 @@ export function TagList({ page }: { page: Page }) {
                     onClick={() => select(t.id)}
                     aria-pressed={isSel}
                     disabled={page === 'insights'}
-                    className={`flex items-center gap-2.5 rounded-md border px-2.5 py-2 text-left ${
-                      isSel ? 'border-accent/40 bg-accent/8' : 'border-transparent hover:bg-panel'
-                    } disabled:cursor-default disabled:hover:bg-transparent`}
+                    className="tag-option flex items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-left hover:bg-panel disabled:cursor-default disabled:hover:bg-transparent"
                   >
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
                     <span className="min-w-0 flex-1">

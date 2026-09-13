@@ -1,37 +1,37 @@
 @import 'tailwindcss' source('./');
 
 @theme {
-  --color-ink: light-dark(#f5f3ec, #101815);
-  --color-panel: light-dark(#ffffff, #18231e);
-  --color-panel-2: light-dark(#ebece4, #233229);
-  --color-line: light-dark(#d0d8ce, #3e5146);
-  --color-line-2: light-dark(#7a8b7e, #819b88);
-  --color-fg: light-dark(#17352a, #edf3eb);
-  --color-muted: light-dark(#52665a, #aabcaf);
-  --color-accent: light-dark(#146747, #8bd8ae);
-  --color-ok: light-dark(#19623d, #91d9a9);
-  --color-warn: light-dark(#805400, #f1cb79);
-  --color-danger: light-dark(#ad3038, #ffa5a5);
+  --color-ink: light-dark(#f5f6f8, #12161d);
+  --color-panel: light-dark(#ffffff, #1b222c);
+  --color-panel-2: light-dark(#edf0f4, #283342);
+  --color-line: light-dark(#dce1e8, #394555);
+  --color-line-2: light-dark(#7b8798, #8190a4);
+  --color-fg: light-dark(#1f2937, #eef2f6);
+  --color-muted: light-dark(#526171, #b1bccb);
+  --color-accent: light-dark(#2457d6, #8fb2ff);
+  --color-ok: light-dark(#247345, #74d5a0);
+  --color-warn: light-dark(#805400, #efc372);
+  --color-danger: light-dark(#b42332, #ff9ca6);
   --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 }
 
 :root {
   color-scheme: light dark;
-  --on-accent: light-dark(#ffffff, #101815);
-  --map-background: light-dark(#fafaf5, #141e19);
-  --map-grid: light-dark(#dfe6dc, #283c30);
-  --map-wall: light-dark(#405b49, #bacdbd);
-  --map-zone: light-dark(#edf0e6, #1b2b21);
-  --map-zone-hover: light-dark(#dfeade, #263f2e);
-  --map-zone-line: light-dark(#6e856c, #637d69);
+  --on-accent: light-dark(#ffffff, #12161d);
+  --map-background: light-dark(#ffffff, #151c25);
+  --map-grid: light-dark(#e5eaf0, #2c394a);
+  --map-wall: light-dark(#526171, #b0bfd0);
+  --map-zone: light-dark(#f3f5f8, #1e2834);
+  --map-zone-hover: light-dark(#e8edf5, #2c3b4e);
+  --map-zone-line: light-dark(#78879a, #8596ac);
   --map-path: light-dark(#718979, #7f9b89);
-  --tag-1: light-dark(#006a77, #69d9e4);
+  --tag-1: light-dark(#2457d6, #8fb2ff);
   --tag-2: light-dark(#7041a1, #c7a2ff);
-  --tag-3: light-dark(#26712e, #9be29c);
-  --tag-4: light-dark(#885300, #f4cb73);
-  --tag-5: light-dark(#a12e60, #ffa2c6);
-  --tag-6: light-dark(#2857a4, #9bbfff);
+  --tag-3: light-dark(#885300, #f4cb73);
+  --tag-4: light-dark(#a12e60, #ffa2c6);
+  --tag-5: light-dark(#006a77, #69d9e4);
+  --tag-6: light-dark(#526171, #b1bccb);
   --heat-low: light-dark(#208c92, #58cbd0);
   --heat-high: light-dark(#ad3c20, #ff9868);
 }
@@ -79,6 +79,7 @@ input[type='time'] { min-width: 0; }
 .sidebar section > p:first-child { font-size: 13px; font-weight: 600; }
 .empty-note { padding: 16px; border: 1px dashed var(--color-line-2); border-radius: 6px; color: var(--color-muted); font-size: 13px; line-height: 1.7; }
 .tag-status { font-size: 13px; white-space: nowrap; }
+.tag-option[aria-pressed='true'] { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 6%, var(--color-ink)); box-shadow: inset 3px 0 var(--color-accent); }
 .primary-button { min-height: 40px; border-radius: 6px; background: var(--color-accent); color: var(--on-accent); padding: 9px 14px; font-size: 13px; font-weight: 650; }
 .primary-button:hover:not(:disabled) { filter: brightness(1.1); }
 .primary-button:disabled { opacity: .4; }
@@ -109,7 +110,7 @@ input[type='time'] { min-width: 0; }
 .map-stage[data-view='detail'] > svg { width: var(--plan-width); max-width: none; }
 .map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px 6px; }
 .map-toolbar button { min-height: 40px; padding: 6px 10px; border: 1px solid var(--color-line-2); border-radius: 4px; font-size: 13px; }
-.map-toolbar [aria-pressed='true'] { background: var(--color-accent); color: var(--on-accent); border-color: var(--color-accent); }
+.map-toolbar [aria-pressed='true'] { background: var(--color-panel-2); color: var(--color-accent); border-color: var(--color-accent); box-shadow: inset 0 -2px var(--color-accent); }
 .map-hint { padding: 0 20px 12px; font-size: 13px; color: var(--color-muted); }
 .map-dimensions { padding: 10px 20px; border-top: 1px solid var(--color-line); background: var(--map-background); color: var(--color-muted); font-size: 13px; }
 .map-label { paint-order: stroke; stroke: var(--map-background); stroke-width: 3px; stroke-linejoin: round; }
@@ -227,7 +228,7 @@ input[type='time'] { min-width: 0; }
   }
 }
 
-input[type='range'] {
+input[type='range'], input[type='checkbox'] {
   accent-color: var(--color-accent);
 }
 
