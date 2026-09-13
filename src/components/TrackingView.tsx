@@ -5,7 +5,7 @@ import { FloorPlan } from './FloorPlan'
 import { LiveInfo } from './Stats'
 import { ReplayBar, useReplay } from './Replay'
 import { fmtDuration } from '../lib/trajectory'
-import { maxHeatCount } from '../lib/heatmap'
+import { heatColor, maxHeatCount } from '../lib/heatmap'
 import type { Period } from './PeriodPicker'
 import type { TagInfo } from '../types'
 import type { Heatmap, Mode, Page, Sample } from '../types'
@@ -163,7 +163,9 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
     <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span><i className="legend-stale" /> Sin actualizar</span><span className="legend-scale">Cuadrícula · 1 m</span>
       {mode === 'replay' && <><span><i className="legend-played" /> Reproducido</span><span><i className="legend-pending" /> Pendiente</span></>}
       {heat && <span className="heat-legend" role="group" aria-label="Escala del mapa de calor">
-        {maxHeat > 0 ? <>0 <i className="heat-scale" aria-hidden="true" /> {maxHeat.toLocaleString('es-ES')} muestras/celda · máximo del periodo</>
+        {maxHeat > 0 ? <><span className="heat-zero"><i aria-hidden="true" />0</span>
+          {maxHeat > 1 && '1'}<i className="heat-scale" aria-hidden="true" style={{ background: `linear-gradient(90deg in oklab, ${heatColor(1 / maxHeat)}, ${heatColor(1)})` }} />
+          {maxHeat.toLocaleString('es-ES')} {maxHeat === 1 ? 'muestra' : 'muestras'}/celda · máximo del periodo</>
           : 'Sin muestras en el mapa de calor'}
       </span>}
     </div>

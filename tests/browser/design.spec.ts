@@ -196,6 +196,61 @@ test('theme selection remains usable when local storage is blocked', async ({ pa
 })
 
 for (const theme of ['light', 'dark']) {
+  test(`heatmap colours match the scale and replay remains distinguishable in ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 960 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openApp(page)
+    await page.getByRole('combobox', { name: 'Tema' }).selectOption(theme)
+    let counts = [1, 5, 10, 15, 20]
+    await page.route('**/heatmap?*', route => route.fulfill({ json: { cell: 0.5,
+      bins: counts.map((count, i) => ({ cx: i + 2, cy: 4, count })),
+    } }))
+    const samples = [0, 5, 10, 15, 20].map(second => ({ ts: new Date(Date.parse('2026-09-13T11:59:00Z') + second * 1000).toISOString(),
+      x: 1 + second / 10, y: 2.25, quality: 0.1, n_anchors: 4 }))
+    await page.route('**/positions/*', route => route.fulfill({ json: samples }))
+    await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await page.getByRole('checkbox').check()
+    const legend = page.getByRole('group', { name: 'Escala del mapa de calor' })
+    await expect(legend).toContainText('20 muestras/celda')
+    const cells = page.locator('svg rect').filter({ has: page.locator('title', { hasText: /en esta celda/ }) })
+    await expect(cells).toHaveCount(5)
+    const fills = await cells.evaluateAll(nodes => nodes.map(node => ({ fill: getComputedStyle(node).fill,
+      opacity: getComputedStyle(node).opacity, stroke: getComputedStyle(node).stroke })))
+    expect(fills.every(cell => cell.opacity === '1' && cell.stroke !== 'none')).toBe(true)
+    const gradient = await page.locator('.heat-scale').evaluate(node => getComputedStyle(node).backgroundImage)
+    expect(gradient).toContain(fills[0].fill)
+    expect(gradient).toContain(fills[4].fill)
+    const contrast = await page.evaluate(() => {
+      const probe = document.createElement('span'); document.body.append(probe)
+      function lum(token: string) {
+        probe.style.color = `var(--${token})`
+        return getComputedStyle(probe).color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map(v => v / 255)
+          .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+          .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0)
+      }
+      const played = lum('map-played'), pending = lum('map-path'), background = lum('map-background'), edge = lum('heat-edge'), zone = lum('map-zone')
+      const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+      probe.remove(); return [ratio(played, pending), ratio(pending, background), ratio(edge, zone)]
+    })
+    for (const ratio of contrast) expect(ratio).toBeGreaterThanOrEqual(3)
+    for (const index of [1, 3, 2]) {
+      await page.getByRole('slider', { name: 'Posición temporal' }).fill(String(Date.parse(samples[index].ts)))
+      await expect(page.locator('svg path[stroke="var(--map-played)"]').first()).toHaveCSS('stroke-dasharray', 'none')
+      await expect(page.locator('svg path[stroke="var(--map-path)"]').first()).toHaveCSS('stroke-dasharray', '5px, 5px')
+    }
+    await expect(page.locator('.map-legend')).toContainText('Reproducido')
+    await expect(page.locator('.map-legend')).toContainText('Pendiente')
+    await page.screenshot({ path: `tmp/palette-${theme}-heat.png`, fullPage: true })
+    counts = [1]
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await expect(legend).toContainText('1 muestra/celda')
+    await expect(cells).toHaveCount(1)
+    const singleFill = await cells.first().evaluate(node => getComputedStyle(node).fill)
+    const singleGradient = await page.locator('.heat-scale').evaluate(node => getComputedStyle(node).backgroundImage)
+    expect(singleGradient.split(singleFill)).toHaveLength(3)
+  })
+
   test(`accessible live, stale, replay and analysis states in the ${theme} theme`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 960 })
     await page.emulateMedia({ reducedMotion: 'reduce' })

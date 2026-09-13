@@ -33,8 +33,9 @@
   --tag-4: light-dark(#a12e60, #ffa2c6);
   --tag-5: light-dark(#006a77, #69d9e4);
   --tag-6: light-dark(#526171, #b1bccb);
-  --heat-low: light-dark(#208c92, #58cbd0);
-  --heat-high: light-dark(#ad3c20, #ff9868);
+  --heat-low: light-dark(#fef3c7, #423322);
+  --heat-high: light-dark(#b45309, #fbbf24);
+  --heat-edge: light-dark(#94600e, #c89a4a);
 }
 :root[data-theme='light'] { color-scheme: light; }
 :root[data-theme='dark'] { color-scheme: dark; }
@@ -129,7 +130,9 @@ input[type='time'] { min-width: 0; }
 .legend-scale { margin-left: auto; }
 .legend-played, .legend-pending { width: 20px; border-top: 3px solid var(--map-played); }
 .legend-pending { border-top: 2px dashed var(--map-path); }
-.heat-scale { width: 60px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--heat-low), var(--heat-high)); }
+.heat-scale { width: 60px; height: 10px; border: 1px solid var(--heat-edge); border-radius: 2px; }
+.heat-zero { display: inline-flex; align-items: center; gap: 4px; }
+.heat-zero i { width: 10px; height: 10px; background: var(--map-background); border: 1px solid var(--color-line-2); }
 .replay-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border: 1px solid var(--color-line-2); border-radius: 6px; background: var(--color-panel); padding: 14px 18px; }
 .replay-controls input[type='range'] { min-width: 120px; }
 .analysis-content { display: flex; flex-direction: column; gap: 16px; }

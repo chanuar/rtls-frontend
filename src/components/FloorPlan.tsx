@@ -2,7 +2,7 @@ import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } 
 import { ENTRANCE, FLOOR, TEST_LAYOUT, ZONES, qualityLevel, tagColor } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample } from '../types'
 import { isContinuous } from '../lib/trajectory'
-import { maxHeatCount } from '../lib/heatmap'
+import { heatColor, maxHeatCount } from '../lib/heatmap'
 import { ReplayPath } from './ReplayPath'
 
 const SCALE = 64 // px por metro
@@ -25,10 +25,6 @@ interface Props {
 }
 
 const QUALITY_COLOR = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', bad: 'var(--color-danger)' } as const
-
-function heatColor(t: number): string {
-  return `color-mix(in oklab, var(--heat-low), var(--heat-high) ${t * 100}%)`
-}
 
 const TagLabel = memo(function TagLabel({ label, color, markerX, mapWidth, scale }: {
   label: string; color: string; markerX: number; mapWidth: number; scale: number
@@ -233,9 +229,11 @@ export function FloorPlan(p: Props) {
             width={p.heat!.cell * SCALE}
             height={p.heat!.cell * SCALE}
             fill={heatColor(t)}
-            opacity={0.12 + 0.5 * t}
+            stroke="var(--heat-edge)"
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
             rx={2}
-          />
+          ><title>{`${b.count.toLocaleString('es-ES')} ${b.count === 1 ? 'muestra' : 'muestras'} en esta celda`}</title></rect>
         )
       })}
 
