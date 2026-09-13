@@ -4,6 +4,9 @@ import { useStore } from '../store'
 import { FloorPlan } from './FloorPlan'
 import { LiveInfo } from './Stats'
 import { ReplayBar, useReplay } from './Replay'
+import { fmtDuration } from '../lib/trajectory'
+import type { Period } from './PeriodPicker'
+import type { TagInfo } from '../types'
 import type { Heatmap, Mode, Page, Sample } from '../types'
 
 const STATUS = {
@@ -96,7 +99,7 @@ export function SelectedLiveInfo() {
   return <LiveInfo pos={pos} stale={!!pos && (status === 'connecting' || !isFresh(pos, now))} now={now} />
 }
 
-export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: number }) {
+export function Overview() {
   const tagCount = useStore(s => s.tags.length)
   const anchorCount = useStore(s => s.anchors.length)
   const selectedTag = useStore(s => s.selectedTag)
@@ -106,9 +109,29 @@ export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: numbe
               <div className="overview" role="group" aria-label="Resumen del sistema">
                 <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tagCount}</small></strong></div>
                 <div><span>Anchors configurados</span><strong>{anchorCount}<small> referencias</small></strong></div>
-                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : sampleCount}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : sampleCount === 1 ? ' posición' : ' posiciones'}</small></strong></div>
+                <div><span>Tag seleccionado</span><strong>{selectedTag ?? '—'}<small>{selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos'}</small></strong></div>
               </div>
   )
+}
+
+export function HistoryOverview({ tag, period, sampleCount, durationS }: {
+  tag: TagInfo | undefined; period: Period; sampleCount: number | null; durationS: number | null
+}) {
+  const employee = tag?.employee?.trim()
+  return <div className="overview history-overview" role="group" aria-label="Resumen del histórico">
+    <div><span>Empleado / tag</span><strong>{employee || tag?.id || 'Sin tag'}</strong>{employee && <small>{tag?.id}</small>}</div>
+    <div><span>Periodo solicitado</span><strong className="period-summary">
+      {[period.start, period.end].map((date, i) => <span key={i}>
+        {i === 0 ? 'Desde ' : 'Hasta '}{Number.isFinite(date.getTime())
+          ? <time dateTime={date.toISOString()}>{date.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</time>
+          : 'pendiente'}
+      </span>)}
+    </strong></div>
+    <div><span>Tiempo observado</span><strong>{durationS === null ? '—' : fmtDuration(durationS)}</strong>
+      <small>{sampleCount === null ? 'Sin histórico cargado' : `${sampleCount} ${sampleCount === 1 ? 'muestra' : 'muestras'}`}</small>
+      <span>Excluye huecos y saltos descartados.</span>
+    </div>
+  </div>
 }
 
 function MapCard({ mode, loading, heat, children, emptyState }: {

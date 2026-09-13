@@ -110,6 +110,37 @@ test('themes follow the system, persist explicit choices and apply before React 
   await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
 })
 
+test('history summary identifies the local period and observed coverage without live metrics', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openApp(page)
+  await page.getByLabel('Desde', { exact: true }).fill('2026-09-12T23:55')
+  await page.getByLabel('Hasta', { exact: true }).fill('2026-09-13T13:00')
+  await page.route('**/positions/*', route => route.fulfill({ json: [0, 5, 1200, 1205].map(second => ({
+    ts: new Date(Date.parse('2026-09-13T10:00:00Z') + second * 1000).toISOString(), x: 1, y: 2, quality: 0.1, n_anchors: 4,
+  })) }))
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  const summary = page.getByRole('group', { name: 'Resumen del histórico' })
+  await expect(summary).toContainText('Sin histórico cargado')
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(summary).toContainText('Ana')
+  await expect(summary).toContainText('4 muestras')
+  await expect(summary).toContainText('10 s')
+  await expect(summary).toContainText('12/9/26, 23:55')
+  await expect(summary.locator('time').first()).toHaveAttribute('datetime', '2026-09-12T22:55:00.000Z')
+  await expect(page.getByRole('group', { name: 'Resumen del sistema' })).toHaveCount(0)
+  await page.locator('.filter-summary').click()
+  await expect(summary).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+  await page.screenshot({ path: 'tmp/history-summary-mobile.png', fullPage: true })
+  await page.locator('.filter-summary').click()
+  await page.getByRole('button', { name: /Luis/ }).click()
+  await expect(summary).toContainText('Luis')
+  await expect(summary).toContainText('Sin histórico cargado')
+  await expect(summary).not.toContainText('4 muestras')
+  await page.getByLabel('Desde', { exact: true }).fill('')
+  await expect(summary).toContainText('Desde pendiente')
+})
+
 test('theme selection remains usable when local storage is blocked', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

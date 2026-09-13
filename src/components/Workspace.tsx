@@ -4,7 +4,7 @@ import { useStore } from '../store'
 import { InsightsPage } from './Insights'
 import { PeriodPicker, todayPeriod, isValidPeriod, type Period } from './PeriodPicker'
 import { ReplayStats } from './Stats'
-import { TagList, SelectedLiveInfo, Overview, LiveMap, ReplayMap } from './TrackingView'
+import { TagList, SelectedLiveInfo, Overview, HistoryOverview, LiveMap, ReplayMap } from './TrackingView'
 import type { Mode, Page } from '../types'
 import { useHistory } from './useHistory'
 
@@ -109,7 +109,8 @@ export function Workspace({ page }: { page: Page }) {
                 </div>
                 <span className="layout-badge">{TEST_LAYOUT ? 'Área de prueba' : 'Planta principal'}</span>
               </div>
-              <Overview mode={mode} sampleCount={trajectory.length} />
+              {mode === 'live' ? <Overview /> : <HistoryOverview tag={tags.find(t => t.id === selectedTag)} period={period}
+                sampleCount={historyLoaded ? trajectory.length : null} durationS={historyLoaded ? stats?.durationS ?? 0 : null} />}
               {mode === 'live' && <div role="status" className={loading || historyLoaded ? 'flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-panel p-3 text-[13px]' : 'sr-only'}>
                 {loading ? 'Cargando jornada…' : historyLoaded && <>
                   <p>{trajectory.length === 0 ? historyMessage : `Histórico cargado de ${selectedTag}: ${trajectory.length} ${trajectory.length === 1 ? 'muestra' : 'muestras'}.`}</p>
