@@ -39,6 +39,17 @@ test('REST accepts empty responses, nullable sample fields and the backend contr
   assert.equal((await api([]).fetchPositions('T0', start, end)).length, 0)
 })
 
+test('history preserves precise timestamp order and enforces exact period boundaries', async () => {
+  const first = { ...sample, ts: '2026-09-05T12:00:00.123100Z' }
+  const second = { ...sample, ts: '2026-09-05T13:00:00.123900+01:00' }
+  const rows = [sample, first, second, { ...sample, ts: '2026-09-05T12:00:05Z' }]
+  assert.equal(await api(rows).fetchPositions('T0', start, end), rows)
+  await assert.rejects(api([second, first]).fetchPositions('T0', start, end), /Respuesta inválida/)
+  await assert.rejects(api([first, { ...first, ts: '2026-09-05T13:00:00.12310+01:00' }])
+    .fetchPositions('T0', start, end), /Respuesta inválida/)
+  await assert.rejects(api([second]).fetchPositions('T0', start, new Date('2026-09-05T12:00:00.123Z')), /Respuesta inválida/)
+})
+
 test('REST explains transport and JSON failures in Spanish without hiding unexpected errors', async () => {
   const cases = [
     [async () => ({ ok: false, status: 503, statusText: 'Service Unavailable' }), /el histórico \(HTTP 503\).*Inténtalo de nuevo/],

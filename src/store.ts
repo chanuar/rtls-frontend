@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { fetchAnchors, fetchTags } from './lib/api'
-import { isTimestamp } from './lib/time'
+import { compareTimestamps, isTimestamp } from './lib/time'
 import { DEMO_ANCHORS, DEMO_TAGS, startDemoLive } from './lib/demo'
 import { DEMO_MODE, WS_URL } from './config'
 import type { Anchor, ConnectionStatus, LivePosition, Sample, TagInfo } from './types'
@@ -80,9 +80,9 @@ export const useStore = create<Store>((set, get) => ({
 
   _apply: (p) => {
     if (!isLivePosition(p)) return 'Posición rechazada: revisa el tag, la fecha con zona horaria, las coordenadas, el RMS y el número de anchors.'
-    if (Date.parse(p.ts) > Date.now()) return 'Posición rechazada: la fecha está en el futuro. Revisa los relojes del sistema.'
+    if (compareTimestamps(p.ts, new Date(Date.now()).toISOString()) > 0) return 'Posición rechazada: la fecha está en el futuro. Revisa los relojes del sistema.'
     set((s) => {
-      if (s.live[p.tag] && Date.parse(p.ts) <= Date.parse(s.live[p.tag].ts)) return s
+      if (s.live[p.tag] && compareTimestamps(p.ts, s.live[p.tag].ts) <= 0) return s
       const trail = [...(s.trails[p.tag] ?? []), { ts: p.ts, x: p.x, y: p.y, quality: p.quality, n_anchors: p.n_anchors }]
       if (trail.length > TRAIL_LENGTH) trail.splice(0, trail.length - TRAIL_LENGTH)
       const tags = s.tags.some((t) => t.id === p.tag)

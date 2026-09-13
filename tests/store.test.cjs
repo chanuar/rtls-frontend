@@ -76,6 +76,21 @@ test('a rejected future position cannot block the next valid measurement', () =>
   assert.equal(useStore.getState().trails.T0.length, 1)
 })
 
+test('live positions preserve submillisecond ordering without accepting future fractions', () => {
+  const now = Date.parse('2026-09-05T12:00:01Z')
+  class Clock extends Date { static now() { return now } }
+  const { useStore } = load('src/store.ts', {}, { Date: Clock })
+  const first = { ...position, ts: '2026-09-05T12:00:00.123100Z' }
+  const second = { ...position, ts: '2026-09-05T13:00:00.123900+01:00', x: 2 }
+  useStore.getState()._apply(first)
+  useStore.getState()._apply(second)
+  useStore.getState()._apply(first)
+  assert.equal(useStore.getState().live.T0, second)
+  assert.equal(useStore.getState().trails.T0.length, 2)
+  assert.match(useStore.getState()._apply({ ...position, ts: '2026-09-05T12:00:01.000100Z' }), /futuro/)
+  assert.equal(useStore.getState().live.T0, second)
+})
+
 test('startup failure retries the backend without manufacturing demo positions', async () => {
   let fail = true
   const r = runtime({ fetchAnchors: async () => { if (fail) throw Error('offline'); return [] } })

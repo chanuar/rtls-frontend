@@ -73,6 +73,8 @@ export function analyzeTrajectory(samples: Sample[]): TrajectoryStats {
 }
 
 export function sampleIndexAt(samples: Sample[], tMs: number, timestamps?: number[]): number {
+  // ponytail: the replay clock resolves milliseconds; show the last sample in a tick.
+  // Submillisecond playback would need a relative-time clock.
   let lo = -1
   let hi = samples.length
   while (hi - lo > 1) {

@@ -64,6 +64,7 @@ export function ReplayBar({ replay }: BarProps) {
   return (
     <div className="replay-controls">
       <button
+        disabled={range.start === range.end}
         onClick={() => {
           if (!playing && cursor >= range.end) setCursor(range.start)
           setPlaying(!playing)
@@ -74,9 +75,11 @@ export function ReplayBar({ replay }: BarProps) {
         {playing ? '❚❚' : '▶'}
       </button>
       <span className="font-mono text-[13px] text-muted tabular-nums">{formatter.format(cursor)}</span>
+      {range.start === range.end && <span className="text-[13px] text-muted">Sin intervalo reproducible</span>}
       {!replay.marker && <span className="text-[13px] text-warn">Sin datos en este intervalo</span>}
       <input
         type="range"
+        disabled={range.start === range.end}
         aria-label="Posición temporal"
         aria-valuetext={new Date(cursor).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'medium' })}
         className="flex-1"

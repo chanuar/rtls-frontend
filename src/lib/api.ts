@@ -1,5 +1,5 @@
 import { API_URL } from '../config'
-import { isTimestamp } from './time'
+import { compareTimestamps, isTimestamp } from './time'
 import type { Anchor, Heatmap, Sample, TagInfo } from '../types'
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -24,7 +24,7 @@ function samples(value: unknown): value is Sample[] {
   return Array.isArray(value) && value.every((s, i) => record(s) && isTimestamp(s.ts) &&
     finite(s.x) && finite(s.y) && (s.quality === null || (finite(s.quality) && s.quality >= 0)) &&
     (s.n_anchors === null || (finite(s.n_anchors) && Number.isInteger(s.n_anchors) && s.n_anchors >= 3)) &&
-    (i === 0 || Date.parse(s.ts) > Date.parse(value[i - 1].ts)))
+    (i === 0 || compareTimestamps(s.ts, value[i - 1].ts) > 0))
 }
 
 function heatmap(value: unknown): value is Heatmap {
@@ -63,14 +63,17 @@ function periodQuery(start: Date, end: Date): string {
   return `start=${start.toISOString()}&end=${end.toISOString()}`
 }
 
-export const fetchPositions = (tagId: string, start: Date, end: Date, signal?: AbortSignal) =>
-  get(
-    `/positions/${encodeURIComponent(tagId)}?${periodQuery(start, end)}`,
+export const fetchPositions = (tagId: string, start: Date, end: Date, signal?: AbortSignal) => {
+  const query = periodQuery(start, end)
+  const startTs = start.toISOString(), endTs = end.toISOString()
+  return get(
+    `/positions/${encodeURIComponent(tagId)}?${query}`,
     'el histórico',
     (value): value is Sample[] => samples(value) && value.every(s =>
-      Date.parse(s.ts) >= start.getTime() && Date.parse(s.ts) <= end.getTime()),
+      compareTimestamps(s.ts, startTs) >= 0 && compareTimestamps(s.ts, endTs) <= 0),
     signal,
   )
+}
 
 export const fetchHeatmap = (start: Date, end: Date, cell: number, tagId?: string) =>
   get(

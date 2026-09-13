@@ -236,6 +236,30 @@ test('history distinguishes idle, loading, empty, single-sample, ready and error
   await expect(page.getByRole('status').filter({ hasText: 'Selecciona un tag' })).toHaveCount(0)
 })
 
+test('history and analysis accept microseconds and disable playback for a single clock tick', async ({ page }) => {
+  await setup(page)
+  const precise = ['2026-09-13T11:59:00.123100Z', '2026-09-13T12:59:00.123900+01:00']
+    .map(ts => ({ ...samples[0], ts }))
+  await page.route('**/positions/*', route => route.fulfill({ json: [samples[0], ...precise, samples[2]] }))
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByRole('group', { name: 'Resumen del histórico' })).toContainText('4 muestras')
+  await expect(page.getByRole('slider')).toBeEnabled()
+  await page.getByRole('button', { name: 'Reproducir jornada' }).click()
+  await page.clock.runFor(1000)
+  await expect(page.getByRole('button', { name: 'Reproducir jornada' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+  await page.getByRole('button', { name: 'Analizar periodo' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Análisis finalizado' })).toContainText('8 muestras')
+  await page.getByRole('button', { name: 'Plano', exact: true }).click()
+  await page.route('**/positions/*', route => route.fulfill({ json: precise }))
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByText('Sin intervalo reproducible', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reproducir jornada' })).toBeDisabled()
+  await expect(page.getByRole('slider')).toBeDisabled()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
+
 test('loading history from live announces success and opens the existing result with keyboard focus', async ({ page }) => {
   await setup(page)
   await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()

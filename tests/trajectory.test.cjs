@@ -43,6 +43,19 @@ test('cursor search preserves boundaries and gaps with cached timestamps', () =>
   assert.equal(positionAt(samples, 1300000).index, 2)
 })
 
+test('millisecond playback selects the last ordered sample in each tick without bridging it', () => {
+  const samples = [
+    { ...sample(0), ts: '1970-01-01T00:00:00.123100Z', x: 1 },
+    { ...sample(0), ts: '1970-01-01T00:00:00.123900Z', x: 2 },
+    sample(5, 3),
+  ]
+  assert.equal(sampleIndexAt(samples, 123), 1)
+  assert.equal(sampleIndexAt(samples, 123, samples.map(s => Date.parse(s.ts))), 1)
+  assert.equal(positionAt(samples, 123).x, 2)
+  assert.equal(isContinuous(samples[0], samples[1]), false)
+  assert.equal(analyzeTrajectory(samples).distanceM, 1)
+})
+
 test('chunk boundaries preserve continuity and never bridge a gap or rejected jump', () => {
   const React = require('react')
   const { renderToStaticMarkup } = require('react-dom/server')
