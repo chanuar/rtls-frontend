@@ -18,6 +18,11 @@ function startOfDay(d: Date): Date {
   return c
 }
 
+export function todayPeriod(now = new Date()): Period {
+  const start = startOfDay(now)
+  return { start, end: new Date(Math.max(now.getTime(), start.getTime() + 1)) }
+}
+
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
@@ -83,7 +88,7 @@ export function PeriodPicker({ value, onChange }: Props) {
     const now = new Date()
     setPicking(null)
     if (kind === 'today') {
-      onChange({ start: withTime(now, '08:00'), end: now })
+      onChange(todayPeriod(now))
     } else if (kind === 'yesterday') {
       const y = new Date(now)
       y.setDate(y.getDate() - 1)

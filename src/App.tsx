@@ -6,7 +6,7 @@ import { analyzeTrajectory } from './lib/trajectory'
 import { useStore } from './store'
 import { FloorPlan } from './components/FloorPlan'
 import { InsightsPage } from './components/Insights'
-import { PeriodPicker, type Period } from './components/PeriodPicker'
+import { PeriodPicker, todayPeriod, type Period } from './components/PeriodPicker'
 import { ReplayBar, useReplay } from './components/Replay'
 import { LiveInfo, ReplayStats } from './components/Stats'
 import type { Heatmap, Mode, Sample } from './types'
@@ -35,11 +35,7 @@ export default function App() {
     (status === 'online' || status === 'demo') && isFresh(p, now)))
   const freshTrails = Object.fromEntries(Object.entries(trails).filter(([tag]) => tag in freshLive))
 
-  const [period, setPeriod] = useState<Period>(() => {
-    const start = new Date()
-    start.setHours(8, 0, 0, 0)
-    return { start, end: new Date() }
-  })
+  const [period, setPeriod] = useState<Period>(todayPeriod)
 
   const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), status === 'demo'])
   const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[]; heat: Heatmap } | null>(null)
