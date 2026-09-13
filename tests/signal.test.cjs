@@ -39,3 +39,11 @@ test('signal summaries need an elapsed interval for cadence and keep unknown qua
   }
   assert.equal(analyzeSignal([sample(0, 0, 4), sample(10, 0, 4)]).gaps.length, 0)
 })
+
+test('averaging finite residuals does not overflow to infinity', () => {
+  const samples = [sample(0, Number.MAX_VALUE, 4), sample(1, Number.MAX_VALUE, 4)]
+
+  const result = analyzeSignal(samples)
+
+  assert.equal(result.meanRms, Number.MAX_VALUE)
+})
