@@ -24,7 +24,7 @@ export default function App() {
               <h1 className="text-[15px] font-semibold tracking-tight">
                 {TEST_LAYOUT ? 'Laboratorio UWB' : 'Farmacia · RTLS'}
               </h1>
-              <p className="mt-0.5 text-[13px] text-muted">
+              <p className="brand-subtitle mt-0.5 text-[13px] text-muted">
                 Localización UWB
               </p>
             </div>

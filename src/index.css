@@ -140,27 +140,42 @@ input[type='time'] { min-width: 0; }
 }
 @media (max-width: 800px) {
   .app-shell { height: auto; min-height: 100dvh; }
-  .app-header { flex-wrap: wrap; padding: 16px 20px; gap: 12px; }
+  .app-header { flex-wrap: wrap; padding: 10px 12px; gap: 8px; }
   .header-navigation { flex: none; width: 100%; justify-content: space-between; }
-  .connection-badge { max-width: 100%; font-size: 13px; }
+  .header-status { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; gap: 8px; }
+  .connection-badge { min-width: 0; max-width: 100%; padding: 6px 8px; font-size: 13px; }
+  .connection-badge > span:first-child { flex-shrink: 0; }
+  .theme-select { gap: 4px; }
+  .brand-subtitle, .workspace-description { display: none; }
+  .brand-mark { width: 28px; height: 28px; font-size: 24px; }
   .workspace { flex-direction: column; }
-  .main-content { overflow: visible; padding: 20px; }
-  .sidebar { width: auto; overflow: visible; border-right: 0; border-bottom: 1px solid var(--color-line); padding: 8px 16px; }
+  .main-content { overflow: visible; padding: 12px; gap: 10px; }
+  .sidebar { width: auto; overflow: visible; border-right: 0; border-bottom: 1px solid var(--color-line); padding: 4px 12px; }
   .sidebar-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; padding-block: 12px; }
   .sidebar-footnote { grid-column: 1 / -1; }
-  .map-card { min-height: 0; }
-  .map-stage[data-view='fit'] { min-height: 180px; }
+  .workspace-title h2 { margin-block: 4px; }
+  .overview > div { padding: 8px; }
+  .history-overview { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+  .history-overview > div:last-child { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; border-left: 0; border-top: 1px solid var(--color-line); }
+  .history-overview > div:last-child strong, .history-overview > div:last-child small { margin: 0; }
+  .history-overview > div:last-child > span:last-child { flex-basis: 100%; }
+  .map-card { flex: none; min-height: 0; }
+  .map-heading { padding: 10px 12px; }
+  .map-heading > span { display: none; }
+  .map-toolbar { padding: 8px 12px 6px; gap: 6px; }
+  .map-toolbar button { padding: 6px 8px; }
+  .map-hint { padding: 0 12px 8px; }
+  .map-dimensions { padding: 8px 12px; }
+  .map-stage { padding: 12px; }
+  .map-stage[data-view='fit'] { min-height: 0; }
 }
 @media (max-width: 480px) {
-  .app-header { padding: 14px 16px; }
-  .header-navigation { flex-wrap: wrap; gap: 16px; }
-  .page-navigation button { padding: 8px 12px; }
-  .main-content { padding: 20px 12px; gap: 16px; }
-  .overview > div { padding: 12px 9px; }
+  .header-navigation { gap: 8px; }
+  .page-navigation button { padding: 8px; }
   .overview span { font-size: 13px; }
   .overview strong { font-size: 18px; }
   .overview small { font-size: 13px; }
-  .map-heading { flex-wrap: wrap; padding: 14px; }
+  .map-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .map-legend { gap: 12px; padding: 12px; }
   .sidebar-content { grid-template-columns: minmax(0, 1fr); }
   .replay-controls { gap: 8px; padding: 12px; }

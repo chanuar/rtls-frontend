@@ -302,6 +302,26 @@ test('mobile filters precede the map in visual and keyboard order', async ({ pag
   await expect(page.getByRole('button', { name: 'Ajustar plano' })).toBeFocused()
 })
 
+for (const width of [320, 390, 640]) {
+  test(`compact mobile chrome keeps the plan near its controls at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    const sockets = await openApp(page)
+    sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts: '2026-09-13T12:00:00Z', x: 3, y: 2, quality: 0.1, n_anchors: 4 }))
+    await expect(page.getByRole('button', { name: 'Seleccionar T0', exact: true })).toBeVisible()
+    await page.locator('.filter-summary').click()
+    const bounds = await page.locator('svg').boundingBox()
+    expect(bounds!.y).toBeLessThan(width === 320 ? 540 : 500)
+    expect(bounds!.width / bounds!.height).toBeCloseTo(29.4 / 7.26, 1)
+    await expect(page.getByRole('button', { name: 'Ver detalle' })).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Tema' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+    await page.screenshot({ path: `tmp/mobile-compact-${width}.png`, fullPage: true })
+    await page.clock.runFor(11000)
+    expect((await page.locator('svg').boundingBox())!.y).toBeLessThan(550)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+  })
+}
+
 for (const width of [320, 640]) {
   test(`controls and map reflow at ${width} CSS pixels`, async ({ page }) => {
     await page.setViewportSize({ width, height: 720 })

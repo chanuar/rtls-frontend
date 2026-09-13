@@ -105,7 +105,7 @@ export function Workspace({ page }: { page: Page }) {
               <div className="workspace-title">
                 <div><p className="eyebrow">{mode === 'live' ? 'LOCALIZACIÓN · EN VIVO' : 'LOCALIZACIÓN · HISTÓRICO'}</p>
                   <h2 ref={title} tabIndex={-1}>{mode === 'live' ? 'Posiciones actuales' : 'Recorrido del periodo'}</h2>
-                  <p>{mode === 'live' ? 'Consulta los tags y su última posición válida.' : 'Selecciona un tag y carga el periodo que quieras explorar.'}</p>
+                  <p className="workspace-description">{mode === 'live' ? 'Consulta los tags y su última posición válida.' : 'Selecciona un tag y carga el periodo que quieras explorar.'}</p>
                 </div>
                 <span className="layout-badge">{TEST_LAYOUT ? 'Área de prueba' : 'Planta principal'}</span>
               </div>

@@ -154,13 +154,13 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
     <div className="map-toolbar" role="group" aria-label="Vista del plano">
       <button type="button" aria-pressed={!detail} onClick={() => setDetail(false)}>Ajustar plano</button>
       <button type="button" aria-pressed={detail} onClick={() => setDetail(true)}>Ver detalle</button>
-      {mode === 'live' && <button type="button" disabled={!canCenter} onClick={centerSelection}>Centrar selección</button>}
+      {mode === 'live' && <button type="button" disabled={!canCenter} onClick={centerSelection}>Centrar tag</button>}
     </div>
-    <p id={hint} className="map-hint">{detail ? 'Detalle · desplázate por el plano con las barras o las flechas del teclado.' : 'Vista general · abre el detalle para leer todas las zonas.'}</p>
-    {!TEST_LAYOUT && <p className="map-dimensions">Entrada a la izquierda · {FLOOR.depth.toLocaleString('es-ES')} m de fondo × {FLOOR.width.toLocaleString('es-ES')} m de ancho</p>}
+    <p id={hint} className="map-hint">{detail ? 'Detalle · desplázate por el plano con las barras o las flechas del teclado.' : 'Abre «Ver detalle» para leer las zonas.'}</p>
     <div ref={stage} className="map-stage" data-view={detail ? 'detail' : 'fit'} role="region" aria-label="Plano desplazable" aria-describedby={hint} tabIndex={0}>
       {children}
     </div>
+    {!TEST_LAYOUT && <p className="map-dimensions">Entrada a la izquierda · {FLOOR.depth.toLocaleString('es-ES')} m de fondo × {FLOOR.width.toLocaleString('es-ES')} m de ancho</p>}
     {emptyState}
     <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span><i className="legend-stale" /> Sin actualizar</span><span className="legend-scale">Cuadrícula · 1 m</span>
       {heat && <span className="heat-legend" role="group" aria-label="Escala del mapa de calor">
