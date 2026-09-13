@@ -19,7 +19,7 @@ test('the rendered replay path has a new segment after a gap', () => {
     anchors: [], live: {}, trails: {}, tagIds: [], selectedTag: null, onSelect() {}, mode: 'replay',
     replayPath: [sample(0), sample(5, 2), sample(1200, 20)], replayTime: 1200000,
   }))
-  const paths = [...html.matchAll(/<path d="([^"]+)"[^>]*stroke="var\(--(?:map-path|color-accent)\)"/g)]
+  const paths = [...html.matchAll(/<path d="([^"]+)"[^>]*stroke="var\(--(?:map-path|map-played)\)"/g)]
   assert.equal(paths.length, 2)
   for (const [, path] of paths) assert.equal(path.replace(/[^ML]/g, ''), 'MLM')
 })
@@ -63,7 +63,7 @@ test('chunk boundaries preserve continuity and never bridge a gap or rejected ju
   for (const last of [sample(256 * 5), sample(256 * 5 + 20), sample(256 * 5, 100)]) {
     const samples = [...Array.from({ length: 256 }, (_, i) => sample(i * 5)), last]
     const html = renderToStaticMarkup(React.createElement(ReplayPath, { samples, time: Date.parse(last.ts), minX: 0, maxY: 6, scale: 64 }))
-    const paths = [...html.matchAll(/<path d="([^"]+)"/g)]
+    const paths = [...html.matchAll(/<path d="([^"]+)"[^>]*stroke="var\(--(?:map-path|map-played)\)"/g)]
     assert.equal(paths.length, 4)
     assert.equal(paths[1][1].replace(/[^ML]/g, ''), isContinuous(samples[255], last) ? 'ML' : 'MM')
     assert.equal(paths[0][1], paths[2][1])

@@ -306,8 +306,8 @@ export function FloorPlan(p: Props) {
       {p.mode === 'replay' && p.replayMarker && (
         <g transform={`translate(${X(p.replayMarker.x)} ${Y(p.replayMarker.y)})`}>
           <g transform={`scale(${uiScale})`}>
-          <circle className="tag-pulse" r={9} fill="none" stroke="var(--color-accent)" strokeWidth={1.5} />
-          <circle r={8} fill="var(--color-accent)" stroke="var(--map-background)" strokeWidth={2} />
+          <circle className="tag-pulse" r={9} fill="none" stroke="var(--map-played)" strokeWidth={1.5} />
+          <circle r={8} fill="var(--map-played)" stroke="var(--map-background)" strokeWidth={2} />
           </g>
         </g>
       )}

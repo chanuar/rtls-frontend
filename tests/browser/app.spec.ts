@@ -391,12 +391,12 @@ test('played paths remain above future overlapping chunks when seeking forward a
   const slider = page.getByRole('slider', { name: 'Posición temporal' })
   for (const index of [200, 400, 100]) {
     await slider.fill(String(Date.parse(route[index].ts)))
-    await expect.poll(() => page.locator('svg path[stroke="var(--color-accent)"]').first().evaluate(path => {
+    await expect.poll(() => page.locator('svg path[stroke="var(--map-played)"]').first().evaluate(path => {
       const played = path as SVGPathElement
       const point = played.getPointAtLength(played.getTotalLength() / 2)
       return [...played.ownerSVGElement!.querySelectorAll('path')]
         .filter(p => p.isPointInStroke(point)).at(-1)?.getAttribute('stroke')
-    })).toBe('var(--color-accent)')
+    })).toBe('var(--map-played)')
   }
 })
 

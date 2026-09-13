@@ -161,6 +161,7 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
     {!TEST_LAYOUT && <p className="map-dimensions">Entrada a la izquierda · {FLOOR.depth.toLocaleString('es-ES')} m de fondo × {FLOOR.width.toLocaleString('es-ES')} m de ancho</p>}
     {emptyState}
     <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span><i className="legend-stale" /> Sin actualizar</span><span className="legend-scale">Cuadrícula · 1 m</span>
+      {mode === 'replay' && <><span><i className="legend-played" /> Reproducido</span><span><i className="legend-pending" /> Pendiente</span></>}
       {heat && <span className="heat-legend" role="group" aria-label="Escala del mapa de calor">
         {maxHeat > 0 ? <>0 <i className="heat-scale" aria-hidden="true" /> {maxHeat.toLocaleString('es-ES')} muestras/celda · máximo del periodo</>
           : 'Sin muestras en el mapa de calor'}

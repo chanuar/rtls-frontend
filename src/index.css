@@ -25,7 +25,8 @@
   --map-zone: light-dark(#f3f5f8, #1e2834);
   --map-zone-hover: light-dark(#e8edf5, #2c3b4e);
   --map-zone-line: light-dark(#78879a, #8596ac);
-  --map-path: light-dark(#718979, #7f9b89);
+  --map-path: light-dark(#7b8798, #6e7c90);
+  --map-played: light-dark(#12336f, #d2e2ff);
   --tag-1: light-dark(#2457d6, #8fb2ff);
   --tag-2: light-dark(#7041a1, #c7a2ff);
   --tag-3: light-dark(#885300, #f4cb73);
@@ -126,6 +127,8 @@ input[type='time'] { min-width: 0; }
 .legend-tag { width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); }
 .legend-stale { width: 12px; height: 12px; border: 1px dashed var(--color-warn); border-radius: 50%; background: var(--color-muted); }
 .legend-scale { margin-left: auto; }
+.legend-played, .legend-pending { width: 20px; border-top: 3px solid var(--map-played); }
+.legend-pending { border-top: 2px dashed var(--map-path); }
 .heat-scale { width: 60px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--heat-low), var(--heat-high)); }
 .replay-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border: 1px solid var(--color-line-2); border-radius: 6px; background: var(--color-panel); padding: 14px 18px; }
 .replay-controls input[type='range'] { min-width: 120px; }
