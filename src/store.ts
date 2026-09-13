@@ -57,7 +57,7 @@ export const useStore = create<Store>((set, get) => ({
       if (current !== generation) return
       set({
         anchors,
-        tags: tags.length ? tags : inferTagsLater(),
+        tags,
         selectedTag: tags[0]?.id ?? null,
       })
       connectWs(get)
@@ -97,10 +97,6 @@ export const useStore = create<Store>((set, get) => ({
     return null
   },
 }))
-
-function inferTagsLater(): TagInfo[] {
-  return []
-}
 
 function isLivePosition(value: unknown): value is LivePosition {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
