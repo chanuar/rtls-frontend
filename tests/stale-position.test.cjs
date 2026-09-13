@@ -26,6 +26,7 @@ test('positions received between clock ticks stay fresh; stale and disconnected 
   const slots = []
   class Clock extends Date { static now() { return clock } }
   const react = {
+    ...React,
     useState(initial) {
       const i = cursor++
       if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial

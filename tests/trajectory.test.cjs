@@ -1,7 +1,7 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { load } = require('./load.cjs')
-const { positionAt, isContinuous, analyzeTrajectory } = load('src/lib/trajectory.ts')
+const { positionAt, sampleIndexAt, isContinuous, analyzeTrajectory } = load('src/lib/trajectory.ts')
 const sample = (seconds, x = 1, y = 1) => ({ ts: new Date(seconds * 1000).toISOString(), x, y, quality: 0.1, n_anchors: 4 })
 
 test('replay interpolates short intervals but hides the marker across missing measurements', () => {
@@ -30,6 +30,31 @@ test('stationary intervals count once even at the end or before a coverage gap',
   assert.equal(analyzeTrajectory([...stopped, sample(1200)]).stops, 1)
   assert.equal(analyzeTrajectory([...stopped, ...Array.from({ length: 31 }, (_, i) => sample(1200 + i))]).stops, 2)
   assert.equal(analyzeTrajectory(stopped.slice(0, 30)).stops, 0)
+})
+
+test('cursor search preserves boundaries and gaps with cached timestamps', () => {
+  const samples = [sample(0), sample(5, 2), sample(1200, 20)]
+  const timestamps = samples.map(s => Date.parse(s.ts))
+  for (const [time, index] of [[-1, -1], [0, 0], [4999, 0], [5000, 1], [600000, 1], [1200000, 2], [1300000, 2]]) {
+    assert.equal(sampleIndexAt(samples, time, timestamps), index)
+  }
+  assert.equal(sampleIndexAt([], 0), -1)
+  assert.equal(positionAt(samples, -1).index, 0)
+  assert.equal(positionAt(samples, 1300000).index, 2)
+})
+
+test('chunk boundaries preserve continuity and never bridge a gap or rejected jump', () => {
+  const React = require('react')
+  const { renderToStaticMarkup } = require('react-dom/server')
+  const { ReplayPath } = load('src/components/ReplayPath.tsx')
+  for (const last of [sample(256 * 5), sample(256 * 5 + 20), sample(256 * 5, 100)]) {
+    const samples = [...Array.from({ length: 256 }, (_, i) => sample(i * 5)), last]
+    const html = renderToStaticMarkup(React.createElement(ReplayPath, { samples, time: Date.parse(last.ts), minX: 0, maxY: 6, scale: 64 }))
+    const paths = [...html.matchAll(/<path d="([^"]+)"/g)]
+    assert.equal(paths.length, 4)
+    assert.equal(paths[2][1].replace(/[^ML]/g, ''), isContinuous(samples[255], last) ? 'ML' : 'MM')
+    assert.equal(paths[2][1], paths[3][1])
+  }
 })
 
 test('distance uses elapsed time and rejects impossible movement without counting zone time', () => {

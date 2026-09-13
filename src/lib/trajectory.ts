@@ -71,24 +71,24 @@ export function analyzeTrajectory(samples: Sample[]): TrajectoryStats {
   }
 }
 
-export function positionAt(samples: Sample[], tMs: number): { x: number; y: number; index: number } | null {
-  if (!samples.length) return null
-  const first = new Date(samples[0].ts).getTime()
-  const last = new Date(samples[samples.length - 1].ts).getTime()
-  if (tMs <= first) return { x: samples[0].x, y: samples[0].y, index: 0 }
-  if (tMs >= last) {
-    const s = samples[samples.length - 1]
-    return { x: s.x, y: s.y, index: samples.length - 1 }
-  }
-  let lo = 0
-  let hi = samples.length - 1
+export function sampleIndexAt(samples: Sample[], tMs: number, timestamps?: number[]): number {
+  let lo = -1
+  let hi = samples.length
   while (hi - lo > 1) {
     const mid = (lo + hi) >> 1
-    if (new Date(samples[mid].ts).getTime() <= tMs) lo = mid
+    if ((timestamps?.[mid] ?? Date.parse(samples[mid].ts)) <= tMs) lo = mid
     else hi = mid
   }
-  const ta = new Date(samples[lo].ts).getTime()
-  const tb = new Date(samples[hi].ts).getTime()
+  return lo
+}
+
+export function positionAt(samples: Sample[], tMs: number): { x: number; y: number; index: number } | null {
+  if (!samples.length) return null
+  const lo = Math.max(0, sampleIndexAt(samples, tMs))
+  const hi = Math.min(lo + 1, samples.length - 1)
+  const ta = Date.parse(samples[lo].ts)
+  const tb = Date.parse(samples[hi].ts)
+  if (tMs <= ta || lo === hi) return { x: samples[lo].x, y: samples[lo].y, index: lo }
   if (tMs !== ta && !isContinuous(samples[lo], samples[hi])) return null
   const f = tb === ta ? 0 : (tMs - ta) / (tb - ta)
   return {

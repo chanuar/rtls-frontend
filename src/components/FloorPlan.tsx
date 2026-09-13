@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ENTRANCE, FLOOR, TEST_LAYOUT, ZONES, qualityLevel, tagColor } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample } from '../types'
 import { isContinuous } from '../lib/trajectory'
+import { ReplayPath } from './ReplayPath'
 
 const SCALE = 64 // px por metro
 const MARGIN = 0.7 // metros de margen alrededor de los anchors
@@ -65,8 +66,6 @@ export function FloorPlan(p: Props) {
   )
 
   const trailsToDraw = p.mode === 'live' ? p.trails : {}
-  const pathData = (samples: Sample[]) => samples.map((s, i) =>
-    `${i && isContinuous(samples[i - 1], s) ? 'L' : 'M'} ${X(s.x)} ${Y(s.y)}`).join(' ')
 
   return (
     <svg
@@ -165,22 +164,8 @@ export function FloorPlan(p: Props) {
       })}
 
       {p.mode === 'replay' && p.replayPath && p.replayPath.length > 1 && (
-        <>
-          <path
-            d={pathData(p.replayPath)}
-            fill="none"
-            stroke="rgba(148,163,184,0.18)"
-            strokeWidth={1.5}
-          />
-          <path
-            d={pathData(p.replayPath.filter(s => Date.parse(s.ts) <= (p.replayTime ?? 0)))}
-            fill="none"
-            stroke="#00d4ff"
-            strokeWidth={2}
-            strokeOpacity={0.8}
-            strokeLinejoin="round"
-          />
-        </>
+        <ReplayPath samples={p.replayPath} time={p.replayTime ?? 0}
+          minX={bounds.minX} maxY={bounds.minY + bounds.h} scale={SCALE} />
       )}
 
       {p.anchors.map((a) => (

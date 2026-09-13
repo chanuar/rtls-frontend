@@ -4,7 +4,7 @@ const { load } = require('./load.cjs')
 
 test('tag labels use measured width to stay inside the right edge of the map', () => {
   const { FloorPlan } = load('src/components/FloorPlan.tsx', {
-    react: { useMemo: fn => fn(), useState: () => [null, () => {}] },
+    react: { ...require('react'), useMemo: fn => fn(), useState: () => [null, () => {}] },
   })
   function labelOffset(x, width) {
     const tree = FloorPlan({
