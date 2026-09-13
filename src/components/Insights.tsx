@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { ZONES, tagColor, zoneName } from '../config'
 import { fetchPositions } from '../lib/api'
 import { demoTrajectory } from '../lib/demo'
-import { generateInsights, type Insight } from '../lib/insights'
-import { analyzeTrajectory, fmtDuration } from '../lib/trajectory'
+import { generateInsights, MIN_SAMPLES, MIN_PERIOD_S, LOW_ACTIVITY_MIN_HOURS, LOW_ACTIVITY_M_PER_H, type Insight } from '../lib/insights'
+import { analyzeTrajectory, fmtDuration, MAX_GAP_S, STOP_DURATION_S, STOP_RADIUS_M } from '../lib/trajectory'
 import type { ConnectionStatus, Sample, TagInfo } from '../types'
 import { isValidPeriod, type Period } from './PeriodPicker'
 
@@ -84,13 +84,13 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
         {summaries.length > 0 && (
           <div className="mb-4 overflow-x-auto rounded border border-line bg-panel" role="region" aria-label="Resumen por tag" tabIndex={0}>
             <table className="w-full text-left text-[13px]">
-              <caption className="p-3 text-left text-muted">Tiempo observado: suma de intervalos válidos de hasta 10 s; excluye huecos y saltos descartados.</caption>
+              <caption className="p-3 text-left text-muted">Tiempo observado: suma de intervalos válidos de hasta {MAX_GAP_S} s; excluye huecos y saltos descartados.</caption>
               <thead className="bg-panel-2 text-muted"><tr>
                 {['Tag', 'Muestras', 'Tiempo observado', 'Distancia estimada', 'Paradas'].map(label => <th key={label} scope="col" className="p-3 font-medium">{label}</th>)}
               </tr></thead>
               <tbody>{summaries.map(({ tag, count, stats }) => (
                 <tr key={tag} className="border-t border-line">
-                  <th scope="row" className="p-3 font-medium">{tags.find(t => t.id === tag)?.employee ?? tag}<span className="block text-[13px] font-normal text-muted">{count === 0 ? 'Sin datos' : count <= 10 || stats.durationS < 1800 ? 'Datos limitados' : tag}</span></th>
+                  <th scope="row" className="p-3 font-medium">{tags.find(t => t.id === tag)?.employee ?? tag}<span className="block text-[13px] font-normal text-muted">{count === 0 ? 'Sin datos' : count < MIN_SAMPLES || stats.durationS < MIN_PERIOD_S ? 'Datos limitados' : tag}</span></th>
                   <td className="p-3 font-mono">{count}</td>
                   <td className="p-3 font-mono">{fmtDuration(stats.durationS)}</td>
                   <td className="p-3 font-mono">{stats.durationS > 0 ? `${stats.distanceM.toFixed(1)} m` : '—'}</td>
@@ -112,7 +112,7 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
           <div className="rounded-lg border border-line bg-panel p-6 text-center text-[13px] text-muted">
             {summaries.every(s => s.count === 0)
               ? 'Sin datos: no hay posiciones registradas en este periodo.'
-              : summaries.every(s => s.count <= 10 || s.stats.durationS < 1800)
+              : summaries.every(s => s.count < MIN_SAMPLES || s.stats.durationS < MIN_PERIOD_S)
                 ? 'Datos insuficientes para un análisis completo. El resumen muestra únicamente lo observado; amplía el periodo o registra más posiciones.'
                 : 'Sin hallazgos en las comprobaciones disponibles. Esto no confirma un comportamiento normal ni una cobertura completa.'}
           </div>
@@ -161,9 +161,9 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
         </div>
 
         <p className="mt-6 text-[13px] leading-relaxed text-muted">
-          Las reglas requieren más de 10 muestras por tag. Permanencias: al menos 30 min observados;
-          poco movimiento: al menos 2 h observadas y menos de 60 m/h. Una parada requiere 30 s en un
-          radio de 0,4 m. Son estimaciones de movimiento, no una evaluación del rendimiento laboral.
+          Las reglas requieren más de {MIN_SAMPLES - 1} muestras por tag. Permanencias: al menos {MIN_PERIOD_S / 60} min observados;
+          poco movimiento: al menos {LOW_ACTIVITY_MIN_HOURS} h observadas y menos de {LOW_ACTIVITY_M_PER_H} m/h. Una parada requiere {STOP_DURATION_S} s en un
+          radio de {STOP_RADIUS_M.toLocaleString('es-ES')} m. Son estimaciones de movimiento, no una evaluación del rendimiento laboral.
         </p>
     </section>
   )

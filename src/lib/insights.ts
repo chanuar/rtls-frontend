@@ -12,13 +12,15 @@ export interface Insight {
   zone?: string
 }
 
-const MIN_PERIOD_S = 30 * 60
+export const MIN_SAMPLES = 11
+export const MIN_PERIOD_S = 30 * 60
+export const LOW_ACTIVITY_MIN_HOURS = 2
 const DWELL_INFO = 0.45
 const DWELL_WARN = 0.65
 const GAP_MIN_S = 15 * 60
 const COPRESENCE_MIN_S = 45 * 60
 const COPRESENCE_SHARE = 0.35
-const LOW_ACTIVITY_M_PER_H = 60
+export const LOW_ACTIVITY_M_PER_H = 60
 
 export function generateInsights(
   data: Record<string, Sample[]>,
@@ -27,7 +29,7 @@ export function generateInsights(
   const out: Insight[] = []
   const name = (id: string) => tags.find((t) => t.id === id)?.employee ?? id
 
-  const entries = Object.entries(data).filter(([, s]) => s.length > 10)
+  const entries = Object.entries(data).filter(([, s]) => s.length >= MIN_SAMPLES)
 
   for (const [tag, samples] of entries) {
     const stats = analyzeTrajectory(samples)
@@ -46,7 +48,7 @@ export function generateInsights(
     }
 
     const hours = stats.durationS / 3600
-    if (hours >= 2 && stats.distanceM / hours < LOW_ACTIVITY_M_PER_H) {
+    if (hours >= LOW_ACTIVITY_MIN_HOURS && stats.distanceM / hours < LOW_ACTIVITY_M_PER_H) {
       out.push({
         id: `low-${tag}`,
         severity: 'info',

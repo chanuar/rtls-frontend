@@ -1,7 +1,9 @@
 import { ZONES, zoneAt } from '../config'
 import type { Sample } from '../types'
 
-const MAX_GAP_S = 10 // huecos mayores no acumulan tiempo (tag dormido / sin cobertura)
+export const MAX_GAP_S = 10 // huecos mayores no acumulan tiempo (tag dormido / sin cobertura)
+export const STOP_DURATION_S = 30
+export const STOP_RADIUS_M = 0.4
 // ponytail: walking heuristic; calibrate speed/noise limits for faster tracked objects.
 const MAX_SPEED_M_S = 3
 
@@ -46,16 +48,15 @@ export function analyzeTrajectory(samples: Sample[]): TrajectoryStats {
     const zone = zoneAt(b.x, b.y)
     if (zone) perZone.set(zone.id, (perZone.get(zone.id) ?? 0) + dt)
 
-    // Parada: permanecer a <0.4 m de un punto durante >=30 s
     if (!stillOrigin) {
       stillOrigin = a
       stillSince = new Date(a.ts).getTime()
     }
-    if (Math.hypot(b.x - stillOrigin.x, b.y - stillOrigin.y) > 0.4) {
+    if (Math.hypot(b.x - stillOrigin.x, b.y - stillOrigin.y) > STOP_RADIUS_M) {
       stillOrigin = b
       stillSince = new Date(b.ts).getTime()
       stillCounted = false
-    } else if (!stillCounted && (Date.parse(b.ts) - (stillSince ?? 0)) / 1000 >= 30) {
+    } else if (!stillCounted && (Date.parse(b.ts) - (stillSince ?? 0)) / 1000 >= STOP_DURATION_S) {
       stops++
       stillCounted = true
     }
