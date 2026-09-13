@@ -4,7 +4,7 @@ const demo = process.env.TEST_DEMO === 'true'
 
 export default defineConfig({
   testDir: './tests/browser',
-  testIgnore: demo ? ['**/app.spec.ts', '**/performance.spec.ts'] : ['**/demo.spec.ts'],
+  testIgnore: demo ? ['**/app.spec.ts', '**/performance.spec.ts', '**/design.spec.ts'] : ['**/demo.spec.ts'],
   outputDir: './tmp/playwright',
   workers: 1,
   use: { baseURL: 'http://127.0.0.1:5177', channel: process.env.PLAYWRIGHT_CHANNEL ?? 'chrome' },

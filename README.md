@@ -42,7 +42,7 @@ npm run build
 - **Reproducción:** carga la trayectoria de un empleado en un periodo, la reproduce con interpolación suave (×1, ×4, ×16, ×60), scrubber temporal, y calcula estadísticas: distancia recorrida, paradas (≥30 s quieto) y tiempo por zona.
 - **Mapa de calor:** capa superpuesta generada desde el endpoint `/heatmap` (rejilla de 0,5 m), con escala cian → rojo.
 - **Recomendaciones IA:** segunda página que analiza los movimientos de todos los empleados en un periodo y detecta patrones: permanencias largas en una zona, coincidencias prolongadas entre empleados, pérdidas de señal (≥15 min) y actividad anómalamente baja. Primera versión con reglas heurísticas (`src/lib/insights.ts`); la UI está desacoplada del origen, pensada para conectar en el futuro un endpoint `/insights` con LLM en el backend y baselines por empleado.
-- **Selector de periodo:** calendario a medida (semana empezando en lunes, es-ES) con selección de rango de días, horas desde/hasta y presets (Hoy, Ayer, 7 días).
+- **Selector de periodo:** controles nativos de fecha y hora local, desde/hasta, con presets (Hoy, Ayer, 7 días). Las consultas se envían en UTC; los periodos incompletos o invertidos no se pueden cargar.
 - **Plano real:** geometría del local de ~152,75 m² (planta alargada de ~28 × 5,6 m) con sus estancias reales: atención al público, rebotica, oficina, distribuidor, office, almacén, aseo y patio, más el muro perimetral y la entrada. Zonas definidas en metros en `src/config.ts` — afinar límites al medir con cinta métrica. Eje X = profundidad desde la fachada; eje Y = anchura.
 
 ## Estructura

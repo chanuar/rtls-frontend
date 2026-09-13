@@ -5,7 +5,7 @@ import { demoTrajectory } from '../lib/demo'
 import { generateInsights, type Insight } from '../lib/insights'
 import { analyzeTrajectory, fmtDuration } from '../lib/trajectory'
 import type { ConnectionStatus, Sample, TagInfo } from '../types'
-import type { Period } from './PeriodPicker'
+import { isValidPeriod, type Period } from './PeriodPicker'
 
 interface Props {
   status: ConnectionStatus
@@ -21,7 +21,7 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
   const [summaries, setSummaries] = useState<{ tag: string; count: number; stats: ReturnType<typeof analyzeTrajectory> }[]>([])
 
   async function analyze() {
-    if (period.end <= period.start) {
+    if (!isValidPeriod(period)) {
       setError('El final debe ser posterior al inicio.')
       return
     }
@@ -57,15 +57,15 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
             <p className="mt-0.5 text-[12px] text-muted">
               Patrones detectados en los movimientos del periodo seleccionado:{' '}
               <span className="font-mono">
-                {period.start.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                {Number.isFinite(period.start.getTime()) ? period.start.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Inicio pendiente'}
                 {' — '}
-                {period.end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                {Number.isFinite(period.end.getTime()) ? period.end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Final pendiente'}
               </span>
             </p>
           </div>
           <button
             onClick={() => void analyze()}
-            disabled={loading || tags.length === 0}
+            disabled={loading || tags.length === 0 || !isValidPeriod(period)}
             className="shrink-0 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-[12px] text-accent hover:bg-accent/20 disabled:opacity-40"
           >
             {loading ? 'Analizando…' : 'Analizar periodo'}

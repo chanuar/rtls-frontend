@@ -5,7 +5,7 @@ import { demoHeatmap, demoTrajectory } from '../lib/demo'
 import { analyzeTrajectory } from '../lib/trajectory'
 import { useStore } from '../store'
 import { InsightsPage } from './Insights'
-import { PeriodPicker, todayPeriod, type Period } from './PeriodPicker'
+import { PeriodPicker, todayPeriod, isValidPeriod, type Period } from './PeriodPicker'
 import { ReplayStats } from './Stats'
 import { TagList, SelectedLiveInfo, Overview, LiveMap, ReplayMap } from './TrackingView'
 import type { Heatmap, Mode, Page, Sample } from '../types'
@@ -56,7 +56,7 @@ export function Workspace({ page }: { page: Page }) {
 
   async function loadRange() {
     if (!selectedTag) return
-    if (period.end <= period.start) {
+    if (!isValidPeriod(period)) {
       setLoadError('El final debe ser posterior al inicio.')
       return
     }
@@ -111,7 +111,7 @@ export function Workspace({ page }: { page: Page }) {
               <>
                 <button
                   onClick={() => void loadRange()}
-                  disabled={loading || !selectedTag}
+                  disabled={loading || !selectedTag || !isValidPeriod(period)}
                   className="primary-button mt-3 w-full"
                 >
                   {loading ? 'Cargando…' : 'Cargar jornada'}
