@@ -45,6 +45,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   useEffect(() => {
+    request.current = request.current + 1
     setLoading(false)
     setLoadError(null)
     return () => { request.current++ }
