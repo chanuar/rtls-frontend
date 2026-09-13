@@ -112,7 +112,10 @@ export function FloorPlan(p: Props) {
   useLayoutEffect(() => {
     const node = svg.current
     if (!node) return
-    const measure = () => { if (node.clientWidth > 0) setWidth(node.clientWidth) }
+    const measure = () => {
+      const scale = node.getScreenCTM()?.a ?? 0
+      if (scale > 0) setWidth(W * scale)
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)

@@ -332,6 +332,40 @@ test('mobile filters precede the map in visual and keyboard order', async ({ pag
   await expect(page.getByRole('button', { name: 'Ajustar plano' })).toBeFocused()
 })
 
+test('fit shows the entire plan in both dimensions without shrinking labels or selection targets', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openApp(page)
+  await page.route('**/anchors', route => route.fulfill({ json:
+    [[6.2, 2.2], [7.37, 4.4], [0, 4.4], [0, 0.67]].map(([x, y], i) => ({ id: `A${i}`, x, y, z: 0.8, description: null })),
+  }))
+  let socket: WebSocketRoute | undefined
+  await page.routeWebSocket('**/ws/positions', ws => { socket = ws })
+  await page.reload()
+  await expect.poll(() => !!socket).toBe(true)
+  socket!.send(JSON.stringify({ tag: 'T0', ts: await page.evaluate(() => new Date().toISOString()), x: 3, y: 2, quality: 0.1, n_anchors: 4 }))
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport)
+    const stage = page.getByRole('region', { name: 'Plano desplazable' })
+    await expect.poll(() => stage.evaluate(node => {
+      const svg = node.querySelector('svg')!, bounds = node.getBoundingClientRect(), matrix = svg.getScreenCTM()!
+      const start = new DOMPoint(0, 0).matrixTransform(matrix)
+      const end = new DOMPoint(svg.viewBox.baseVal.width, svg.viewBox.baseVal.height).matrixTransform(matrix)
+      return start.x >= bounds.left && start.y >= bounds.top && end.x <= bounds.left + node.clientWidth + 1 &&
+        end.y <= bounds.top + node.clientHeight + 1 && node.scrollHeight <= node.clientHeight + 1
+    })).toBe(true)
+    await expect.poll(() => page.locator('.tag-hit-target').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThan(31)
+    const sizes = await page.locator('svg text').evaluateAll(nodes => nodes.map(node =>
+      parseFloat(getComputedStyle(node).fontSize) * Math.hypot((node as SVGTextElement).getScreenCTM()!.a, (node as SVGTextElement).getScreenCTM()!.b)))
+    expect(Math.min(...sizes)).toBeGreaterThan(11.8)
+    await page.screenshot({ path: `tmp/fit-both-dimensions-${process.env.TEST_LAYOUT ?? 'false'}-${viewport.width}.png`, fullPage: true })
+    await page.getByRole('button', { name: 'Ver detalle' }).click()
+    await expect.poll(() => page.locator('svg').evaluate(node =>
+      Math.abs(node.clientWidth - (node as SVGSVGElement).viewBox.baseVal.width))).toBeLessThan(1)
+    await page.getByRole('button', { name: 'Ajustar plano' }).click()
+  }
+})
+
 for (const width of [320, 390, 640]) {
   test(`compact mobile chrome keeps the plan near its controls at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })

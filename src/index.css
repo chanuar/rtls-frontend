@@ -105,6 +105,7 @@ input[type='time'] { min-width: 0; }
 .map-indicator { width: 7px; height: 7px; border: 1px solid var(--color-accent); transform: rotate(45deg); }
 .map-stage { flex: 1; min-height: 270px; overflow: auto; padding: 24px; background: var(--map-background); }
 .floor-plan { display: block; width: 100%; height: auto; overflow: visible; }
+.map-stage[data-view='fit'] > svg { max-height: 100%; }
 .map-stage[data-view='detail'] > svg { width: var(--plan-width); max-width: none; }
 .map-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px 6px; }
 .map-toolbar button { min-height: 40px; padding: 6px 10px; border: 1px solid var(--color-line-2); border-radius: 4px; font-size: 13px; }
