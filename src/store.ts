@@ -8,6 +8,7 @@ const TRAIL_LENGTH = 40
 
 interface Store {
   status: ConnectionStatus
+  connectionError: string | null
   anchors: Anchor[]
   tags: TagInfo[]
   live: Record<string, LivePosition>
@@ -28,6 +29,7 @@ let generation = 0
 
 export const useStore = create<Store>((set, get) => ({
   status: 'connecting',
+  connectionError: null,
   anchors: [],
   tags: [],
   live: {},
@@ -37,7 +39,7 @@ export const useStore = create<Store>((set, get) => ({
   init: async () => {
     get().stop()
     const current = generation
-    set({ status: 'connecting' })
+    set({ status: 'connecting', connectionError: null })
     if (DEMO_MODE) {
       set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
       stopDemo = startDemoLive((p) => get()._apply(p))
@@ -52,8 +54,9 @@ export const useStore = create<Store>((set, get) => ({
         selectedTag: tags[0]?.id ?? null,
       })
       connectWs(get)
-    } catch {
+    } catch (error) {
       if (current !== generation) return
+      set({ connectionError: error instanceof Error ? error.message : 'Error al cargar la configuración del sistema.' })
       reconnectTimer = window.setTimeout(() => void get().init(), 2000)
     }
   },
@@ -113,8 +116,10 @@ function connectWs(get: () => Store) {
       const previous = get().anchors
       const changed = anchors.length !== previous.length || anchors.some(a =>
         !previous.some(b => a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z))
-      useStore.setState(changed ? { anchors, live: {}, trails: {} } : { anchors })
-    } catch {
+      useStore.setState(changed ? { anchors, live: {}, trails: {}, connectionError: null } : { anchors, connectionError: null })
+    } catch (error) {
+      if (ws !== socket) return
+      useStore.setState({ connectionError: error instanceof Error ? error.message : 'Error al actualizar los anchors.' })
       // Keep the last map during an API outage; retry at the next interval.
     } finally {
       refreshing = false

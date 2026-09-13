@@ -21,7 +21,7 @@ type Page = 'plan' | 'insights'
 const EMPTY_SAMPLES: Sample[] = []
 
 export default function App() {
-  const { status, anchors, tags, live, trails, selectedTag, init, select } = useStore()
+  const { status, connectionError, anchors, tags, live, trails, selectedTag, init, select } = useStore()
   const [page, setPage] = useState<Page>('plan')
   const [mode, setMode] = useState<Mode>('live')
   const [showHeat, setShowHeat] = useState(false)
@@ -139,6 +139,7 @@ export default function App() {
           <span className="text-[11px] font-medium tracking-wide">{st.label}</span>
         </div>
       </header>
+      {connectionError && <p role="alert" className="px-5 py-2 text-[12px] text-warn">{connectionError}</p>}
 
       <div className="workspace">
         <aside className="sidebar" aria-label="Filtros y detalle del tag">
