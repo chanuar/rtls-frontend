@@ -104,13 +104,6 @@ export function FloorPlan(p: Props) {
       aria-label={TEST_LAYOUT ? 'Área de prueba con posiciones UWB' : 'Plano de la farmacia con posiciones de empleados'}
       style={{ '--plan-width': `${W}px` } as CSSProperties}
     >
-      {gridLines.v.map((x) => (
-        <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="var(--map-grid)" />
-      ))}
-      {gridLines.h.map((y) => (
-        <line key={`h${y}`} x1={0} y1={Y(y)} x2={W} y2={Y(y)} stroke="var(--map-grid)" />
-      ))}
-
       {TEST_LAYOUT ? (
         <rect
           x={X(bounds.areaMinX)}
@@ -161,20 +154,18 @@ export function FloorPlan(p: Props) {
             stroke={hoverZone === z.id ? 'var(--color-accent)' : 'var(--map-zone-line)'}
             strokeDasharray="5 4"
           />
-          {z.w * SCALE / uiScale >= z.name.length * 8 + 16 && (
-            <text
-              x={X(z.x) + 8 * uiScale}
-              y={Y(z.y + z.h) + 18 * uiScale}
-              fill={hoverZone === z.id ? 'var(--color-accent)' : 'var(--color-muted)'}
-              fontSize={13 * uiScale}
-              style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
-            >
-              {z.name}
-            </text>
-          )}
           <title>{`${z.name} · ${(z.w * z.h).toFixed(1)} m²`}</title>
         </g>
       ))}
+
+      <g pointerEvents="none" aria-hidden="true">
+        {gridLines.v.map((x) => (
+          <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="var(--map-grid)" />
+        ))}
+        {gridLines.h.map((y) => (
+          <line key={`h${y}`} x1={0} y1={Y(y)} x2={W} y2={Y(y)} stroke="var(--map-grid)" />
+        ))}
+      </g>
 
       {uiScale <= 1.5 && <g fill="var(--color-muted)" fontSize={12 * uiScale} fontFamily="var(--font-mono)" role="group" aria-label="Cotas del plano">
         <path d={`M ${X(bounds.areaMinX)} ${Y(bounds.areaMinY - 0.2)} v 12 m 0 -6 H ${X(bounds.areaMaxX)} m 0 -6 v 12`}
@@ -247,6 +238,21 @@ export function FloorPlan(p: Props) {
           />
         ))
       })}
+
+      {ZONES.map((z) => z.w * SCALE / uiScale >= z.name.length * 8 + 16 && (
+        <text
+          key={z.id}
+          className="map-label"
+          pointerEvents="none"
+          x={X(z.x) + 8 * uiScale}
+          y={Y(z.y + z.h) + 18 * uiScale}
+          fill={hoverZone === z.id ? 'var(--color-accent)' : 'var(--color-muted)'}
+          fontSize={13 * uiScale}
+          style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+        >
+          {z.name}
+        </text>
+      ))}
 
       {p.mode === 'live' &&
         Object.values(p.live).map((pos) => {

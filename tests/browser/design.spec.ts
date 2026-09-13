@@ -9,7 +9,7 @@ async function openApp(page: Page) {
     const path = new URL(route.request().url()).pathname
     const json = path === '/anchors' ? [[0, 0], [0, 5.86], [28, 0], [28, 5.86]].map(([x, y], i) => ({ id: `A${i}`, x, y, z: 3, description: null }))
       : path === '/tags' ? [{ id: 'T0', employee: 'Ana', active: true }, { id: 'T1', employee: 'Luis', active: true }]
-        : path === '/heatmap' ? { cell: 0.5, bins: [{ cx: 4, cy: 4, count: 20 }] } : []
+        : path === '/heatmap' ? { cell: 0.5, bins: [4, 10, 11].map(cy => ({ cx: 4, cy, count: 20 })) } : []
     return route.fulfill({ json })
   })
   const sockets = new Set<WebSocketRoute>()
