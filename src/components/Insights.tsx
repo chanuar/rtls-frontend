@@ -72,7 +72,12 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
           </button>
         </div>
 
-        {error && <p className="mb-3 text-[12px] text-warn">{error}</p>}
+        {error && <p role="alert" className="mb-3 text-[12px] text-warn">{error}</p>}
+        <p role="status" className="sr-only">
+          {loading ? 'Analizando el periodo…' : insights !== null
+            ? `Análisis finalizado. ${summaries.length} tags, ${summaries.reduce((sum, item) => sum + item.count, 0)} muestras y ${insights.length} hallazgos.`
+            : ''}
+        </p>
 
         {ZONES.length === 0 && <p className="mb-3 text-[12px] text-muted">Sin zonas configuradas: permanencias y coincidencias por zona no se analizan. El resumen y la detección de poco movimiento siguen disponibles.</p>}
 

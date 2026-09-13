@@ -88,7 +88,7 @@ export function FloorPlan(p: Props) {
     <svg
       viewBox={`0 0 ${W} ${H}`}
       className="h-full w-full"
-      role="img"
+      role="group"
       aria-label={TEST_LAYOUT ? 'Área de prueba con posiciones UWB' : 'Plano de la farmacia con posiciones de empleados'}
       style={{ maxHeight: '100%' }}
     >

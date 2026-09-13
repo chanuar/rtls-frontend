@@ -76,6 +76,7 @@ export function ReplayBar({ replay }: BarProps) {
       <input
         type="range"
         aria-label="Posición temporal"
+        aria-valuetext={new Date(cursor).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'medium' })}
         className="flex-1"
         min={range.start}
         max={range.end}

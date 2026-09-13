@@ -159,8 +159,10 @@ input[type='time'] { min-width: 0; color-scheme: dark; }
     animation: none;
     opacity: 0;
   }
-  * {
+  *, *::before, *::after {
+    animation: none !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
