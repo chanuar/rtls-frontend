@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { positionAt } from '../lib/trajectory'
+import { periodTimeFormatter } from '../lib/time'
 import type { Sample } from '../types'
 
 const SPEEDS = [1, 4, 16, 60]
@@ -54,10 +55,8 @@ interface BarProps {
 
 export function ReplayBar({ replay }: BarProps) {
   const { range, cursor, setCursor, playing, setPlaying, speed, setSpeed } = replay
-  if (!range) return null
-
-  const fmt = (ms: number) =>
-    new Date(ms).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const formatter = useMemo(() => range ? periodTimeFormatter(range.start, range.end, 'medium') : null, [range])
+  if (!range || !formatter) return null
 
   return (
     <div className="replay-controls">
@@ -71,7 +70,7 @@ export function ReplayBar({ replay }: BarProps) {
       >
         {playing ? '❚❚' : '▶'}
       </button>
-      <span className="font-mono text-[13px] text-muted tabular-nums">{fmt(cursor)}</span>
+      <span className="font-mono text-[13px] text-muted tabular-nums">{formatter.format(cursor)}</span>
       {!replay.marker && <span className="text-[13px] text-warn">Sin datos en este intervalo</span>}
       <input
         type="range"
@@ -84,7 +83,7 @@ export function ReplayBar({ replay }: BarProps) {
         value={cursor}
         onChange={(e) => setCursor(Number(e.target.value))}
       />
-      <span className="font-mono text-[13px] text-muted tabular-nums">{fmt(range.end)}</span>
+      <span className="font-mono text-[13px] text-muted tabular-nums">{formatter.format(range.end)}</span>
       <div className="flex gap-1">
         {SPEEDS.map((s) => (
           <button

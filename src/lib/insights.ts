@@ -58,18 +58,17 @@ export function generateInsights(
   }
 
   for (const [tag, samples] of entries) {
+    const formatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'short', timeStyle: 'short' })
     for (let i = 1; i < samples.length; i++) {
       const a = new Date(samples[i - 1].ts).getTime()
       const b = new Date(samples[i].ts).getTime()
       const gap = (b - a) / 1000
       if (gap >= GAP_MIN_S) {
-        const fmt = (t: number) =>
-          new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
         out.push({
           id: `gap-${tag}-${i}`,
           severity: 'warn',
           title: `Sin señal de ${name(tag)} durante ${fmtDuration(gap)}`,
-          detail: `Entre las ${fmt(a)} y las ${fmt(b)}. Posible batería agotada, tag fuera de cobertura o salida de las instalaciones.`,
+          detail: `Entre ${formatter.format(a)} y ${formatter.format(b)}. Posible batería agotada, tag fuera de cobertura o salida de las instalaciones.`,
           tags: [tag],
         })
       }

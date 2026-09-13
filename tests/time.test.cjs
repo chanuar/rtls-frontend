@@ -1,0 +1,15 @@
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const { load } = require('./load.cjs')
+const { periodTimeFormatter } = load('src/lib/time.ts')
+
+test('period times include dates only when the local calendar day changes', () => {
+  const start = new Date(2026, 11, 31, 23, 30).getTime()
+  const sameDay = new Date(2026, 11, 31, 23, 59).getTime()
+  const nextDay = new Date(2027, 0, 1, 0, 1).getTime()
+  assert.equal(periodTimeFormatter(start, sameDay).formatToParts(start).some(p => p.type === 'day'), false)
+  const formatter = periodTimeFormatter(start, nextDay)
+  assert.equal(formatter.formatToParts(start).find(p => p.type === 'day').value, '31')
+  assert.equal(formatter.formatToParts(nextDay).find(p => p.type === 'day').value, '1')
+  assert.equal(formatter.formatToParts(nextDay).find(p => p.type === 'year').value, '27')
+})

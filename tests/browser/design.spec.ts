@@ -73,6 +73,22 @@ test('map controls, replay time and analysis results expose accessible state wit
   await expect(page.getByRole('alert')).toContainText('500')
 })
 
+test('multi-day replay and signal gaps display both local dates', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: '7 días', exact: true }).click()
+  const samples = [...Array.from({ length: 11 }, (_, i) => new Date(Date.parse('2026-09-08T12:00:00Z') + i * 5000).toISOString()), '2026-09-09T12:00:00Z']
+    .map(ts => ({ ts, x: 1, y: 2, quality: 0.1, n_anchors: 4 }))
+  await page.route('**/positions/*', route => route.fulfill({ json: samples }))
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByText('8/9/26, 13:00:00', { exact: true })).toBeVisible()
+  await expect(page.getByText('9/9/26, 13:00:00', { exact: true })).toBeVisible()
+  await page.screenshot({ path: 'tmp/fix-multiday-replay.png', fullPage: true })
+  await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+  await page.getByRole('button', { name: 'Analizar periodo' }).click()
+  await expect(page.getByText(/Entre 8\/9\/26.*9\/9\/26/).first()).toBeVisible()
+})
+
 test('themes follow the system, persist explicit choices and apply before React loads', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await openApp(page)
