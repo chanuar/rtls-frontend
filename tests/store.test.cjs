@@ -84,8 +84,20 @@ test('startup failure retries the backend without manufacturing demo positions',
   assert.equal(r.useStore.getState().tags.length, 0)
   assert.equal(r.intervals.size, 0)
   assert.equal(r.timeouts.size, 1)
+  const error = r.useStore.getState().connectionError
+  assert.ok(error)
+  for (let i = 0; i < 2; i++) {
+    const retry = r.useStore.getState().init()
+    assert.equal(r.useStore.getState().connectionError, error)
+    await retry
+    assert.equal(r.useStore.getState().connectionError, error)
+    assert.equal(r.timeouts.size, 1)
+  }
   fail = false
-  await r.useStore.getState().init()
+  const recovery = r.useStore.getState().init()
+  assert.equal(r.useStore.getState().connectionError, error)
+  await recovery
+  assert.equal(r.useStore.getState().connectionError, null)
   assert.equal(r.sockets.length, 1)
   r.sockets[0].onopen()
   assert.equal(r.useStore.getState().status, 'online')

@@ -102,6 +102,49 @@ test('real React loads history, changes identity and cleans up StrictMode resour
   expect(errors).toEqual([])
 })
 
+for (const resource of ['anchors', 'tags']) {
+  test(`startup ${resource} error stays visible during retries until the backend recovers`, async ({ page }) => {
+    await page.clock.install({ time: today })
+    await page.clock.pauseAt(today)
+    let hold = false
+    const pending: import('@playwright/test').Route[] = []
+    const tags = [{ id: 'T0', employee: 'Ana', active: true }]
+    await page.route('http://127.0.0.1:8000/**', route => {
+      const path = new URL(route.request().url()).pathname
+      if (path === `/${resource}`) {
+        if (hold) { pending.push(route); return }
+        return route.abort('connectionrefused')
+      }
+      return route.fulfill({ json: path === '/tags' ? tags : [] })
+    })
+    const sockets = new Set<WebSocketRoute>()
+    await page.routeWebSocket('**/ws/positions', socket => { sockets.add(socket) })
+    await page.goto('/tests/browser/harness.html')
+    const alert = page.getByRole('alert')
+    await expect(alert).toContainText('Comprueba la conexión con el backend')
+    const message = await alert.textContent()
+    const bounds = await page.getByRole('region', { name: 'Plano desplazable' }).boundingBox()
+    hold = true
+    for (let i = 0; i < 3; i++) {
+      await page.clock.runFor(2000)
+      await expect.poll(() => pending.length).toBe(1)
+      await expect(alert).toHaveText(message!)
+      expect(await page.getByRole('region', { name: 'Plano desplazable' }).boundingBox()).toEqual(bounds)
+      expect(sockets.size).toBe(0)
+      const response = page.waitForEvent(i < 2 ? 'requestfailed' : 'requestfinished',
+        request => new URL(request.url()).pathname === `/${resource}`)
+      const route = pending.shift()!
+      if (i < 2) await route.abort('connectionrefused')
+      else await route.fulfill({ json: resource === 'tags' ? tags : [] })
+      await response
+      if (i < 2) await expect(alert).toHaveText(message!)
+    }
+    await expect(page.getByRole('button', { name: /Ana/ })).toBeVisible()
+    await expect(alert).toHaveCount(0)
+    await expect.poll(() => sockets.size).toBe(1)
+  })
+}
+
 test('catalogue error remains visible through anchor refreshes until tags recover', async ({ page }) => {
   const sockets = await setup(page)
   let fail = true, requests = 0

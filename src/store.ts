@@ -46,9 +46,9 @@ export const useStore = create<Store>((set, get) => ({
   init: async () => {
     get().stop()
     const current = generation
-    set({ status: 'connecting', connectionError: null, anchorError: null, tagError: null, positionError: null })
+    set({ status: 'connecting', anchorError: null, tagError: null, positionError: null })
     if (DEMO_MODE) {
-      set({ status: 'demo', anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
+      set({ status: 'demo', connectionError: null, anchors: DEMO_ANCHORS, tags: DEMO_TAGS, selectedTag: DEMO_TAGS[0].id })
       stopDemo = startDemoLive((p) => get()._apply(p))
       return
     }
@@ -56,6 +56,7 @@ export const useStore = create<Store>((set, get) => ({
       const [anchors, tags] = await Promise.all([fetchAnchors(), fetchTags()])
       if (current !== generation) return
       set({
+        connectionError: null,
         anchors,
         tags,
         selectedTag: tags[0]?.id ?? null,
