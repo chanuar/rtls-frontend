@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TEST_LAYOUT } from '../config'
 import { useStore } from '../store'
 import { InsightsPage } from './Insights'
@@ -7,6 +7,7 @@ import { ReplayStats } from './Stats'
 import { TagList, SelectedLiveInfo, Overview, HistoryOverview, LiveMap, ReplayMap } from './TrackingView'
 import type { Mode, Page } from '../types'
 import { useHistory } from './useHistory'
+import { SignalDiagnostics } from './SignalDiagnostics'
 
 export function Workspace({ page }: { page: Page }) {
   const demo = useStore(s => s.status === 'demo')
@@ -17,9 +18,16 @@ export function Workspace({ page }: { page: Page }) {
   const [period, setPeriod] = useState<Period>(todayPeriod)
   const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches)
   const title = useRef<HTMLHeadingElement>(null)
+  const main = useRef<HTMLElement>(null)
+  const previousPage = useRef(page)
 
-  const { historyLoaded, trajectory, heat, heatError, heatLoading, loading, loadError, historyMessage, stats, loadRange } = useHistory({ selectedTag, period, demo, showHeat })
+  const history = useHistory({ selectedTag, period, demo, showHeat })
+  const { historyLoaded, trajectory, heat, heatError, heatLoading, loading, loadError, historyMessage, stats, loadRange } = history
   const tagIds = useMemo(() => tags.map((t) => t.id), [tags])
+  useEffect(() => {
+    if (previousPage.current !== page) main.current?.querySelector<HTMLElement>('h2')?.focus()
+    previousPage.current = page
+  }, [page])
 
   return (
       <div className="workspace">
@@ -49,7 +57,7 @@ export function Workspace({ page }: { page: Page }) {
           <section>
             <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">Periodo</p>
             <PeriodPicker value={period} onChange={setPeriod} />
-            {page === 'plan' && (
+            {page !== 'insights' && (
               <>
                 <button
                   onClick={() => void loadRange()}
@@ -99,7 +107,7 @@ export function Workspace({ page }: { page: Page }) {
           </details>
         </aside>
 
-        <main className="main-content">
+        <main ref={main} className="main-content">
           {page === 'plan' ? (
             <>
               <div className="workspace-title">
@@ -122,6 +130,8 @@ export function Workspace({ page }: { page: Page }) {
               </div>}
               {mode === 'live' && <LiveMap loading={loading} heat={showHeat ? heat : null} />}
             </>
+          ) : page === 'signal' ? (
+            <SignalDiagnostics tag={tags.find(t => t.id === selectedTag)} period={period} history={history} />
           ) : (
             <InsightsPage key={JSON.stringify([period.start.getTime(), period.end.getTime(), demo, tagIds])}
               status={demo ? 'demo' : 'online'} tags={tags} tagIds={tagIds} period={period} />

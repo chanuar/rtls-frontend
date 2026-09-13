@@ -66,7 +66,7 @@ export function TagList({ page }: { page: Page }) {
               )}
               {tags.map((t) => {
                 const color = tagColor(t.id, tagIds)
-                const isSel = t.id === selectedTag && page === 'plan'
+                const isSel = t.id === selectedTag && page !== 'insights'
                 return (
                   <button
                     key={t.id}

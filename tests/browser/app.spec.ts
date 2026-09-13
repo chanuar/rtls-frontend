@@ -505,3 +505,32 @@ test('live positions and replay ticks do not rerender the shell, period picker o
   for (const name of ['App', 'Workspace', 'PeriodPicker']) expect(played[name], name).toBe(playing[name])
   expect(played.ReplayMap).toBeGreaterThan(playing.ReplayMap)
 })
+
+test('signal diagnostics show accepted measurements, nullable history and gaps for the selected tag', async ({ page }) => {
+  const sockets = await setup(page)
+  await page.getByRole('button', { name: 'Diagnóstico', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Diagnóstico de señal' })).toBeFocused()
+  const live = page.getByRole('region', { name: 'Señal actual' })
+  await expect(live).toContainText('Esperando la primera posición válida')
+  sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts: today.toISOString(), x: 1, y: 2, quality: 0.12, n_anchors: 4 }))
+  await expect(live).toContainText('0.12 m')
+  await page.clock.runFor(11000)
+  await expect(live).toContainText('Ubicación actual sin confirmar')
+  await page.route('**/positions/*', route => route.fulfill({ json: [0, 5, 20, 25].map((second, i) => ({
+    ...samples[0], ts: new Date(today.getTime() - 60000 + second * 1000).toISOString(),
+    quality: [0.1, null, 0.5, 0][i], n_anchors: [4, null, 3, null][i],
+  })) }))
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByLabel('Calidad del histórico')).toContainText('0,2 m')
+  await expect(page.getByLabel('Calidad del histórico')).toContainText('0,12 Hz')
+  await page.getByText('Interrupciones entre muestras · 1', { exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Interrupciones del periodo' })).toContainText('15 s')
+  await expect(page.getByRole('region', { name: 'Muestras del periodo' })).toContainText('Sin datos')
+  await page.getByRole('button', { name: /T1 T1/ }).click()
+  await expect(page.getByLabel('Calidad del histórico')).toHaveCount(0)
+  await expect(live).toContainText('Esperando la primera posición válida')
+  await expect(page.getByRole('button', { name: /T1 T1/ })).toHaveAttribute('aria-pressed', 'true')
+  await page.route('**/positions/*', route => route.fulfill({ json: [{ invalid: true }] }))
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Respuesta inválida')
+})

@@ -461,3 +461,23 @@ for (const width of [320, 640]) {
     expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([])
   })
 }
+
+for (const theme of ['light', 'dark']) {
+  test(`signal diagnostics use accessible ${theme} surfaces on desktop and mobile`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme === 'light' ? 'light' : 'dark' })
+    await openApp(page)
+    await page.route('**/positions/*', route => route.fulfill({ json: [0, 5, 25].map(second => ({
+      ts: new Date(Date.parse('2026-09-13T11:59:00Z') + second * 1000).toISOString(), x: 2, y: 2, quality: 0.1, n_anchors: 4,
+    })) }))
+    await page.getByRole('button', { name: 'Diagnóstico', exact: true }).click()
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await expect(page.getByRole('region', { name: 'Muestras del periodo' })).toBeVisible()
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 960 })
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
+      const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+      expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([])
+      await page.screenshot({ path: `tmp/signal-${theme}-${width}.png`, fullPage: true })
+    }
+  })
+}

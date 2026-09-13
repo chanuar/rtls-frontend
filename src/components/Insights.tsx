@@ -68,7 +68,7 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
         <div className="workspace-title">
           <div>
             <p className="eyebrow">LOCALIZACIÓN · ANÁLISIS</p>
-            <h2>Resumen del periodo</h2>
+            <h2 tabIndex={-1}>Resumen del periodo</h2>
             <p className="mt-0.5 text-[13px] text-muted">
               Patrones detectados en los movimientos del periodo seleccionado:{' '}
               <span className="font-mono">

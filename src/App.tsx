@@ -34,6 +34,7 @@ export default function App() {
               [
                 ['plan', 'Plano'],
                 ['insights', 'Análisis'],
+                ['signal', 'Diagnóstico'],
               ] as const
             ).map(([p, label]) => (
               <button
