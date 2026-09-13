@@ -463,7 +463,7 @@ for (const width of [320, 640]) {
 }
 
 for (const theme of ['light', 'dark']) {
-  test(`signal diagnostics use accessible ${theme} surfaces on desktop and mobile`, async ({ page }) => {
+  test(`signal and tag pages use accessible ${theme} surfaces on desktop and mobile`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme === 'light' ? 'light' : 'dark' })
     await openApp(page)
     await page.route('**/positions/*', route => route.fulfill({ json: [0, 5, 25].map(second => ({
@@ -472,12 +472,15 @@ for (const theme of ['light', 'dark']) {
     await page.getByRole('button', { name: 'Diagnóstico', exact: true }).click()
     await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
     await expect(page.getByRole('region', { name: 'Muestras del periodo' })).toBeVisible()
-    for (const width of [1440, 390]) {
-      await page.setViewportSize({ width, height: 960 })
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
-      const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
-      expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([])
-      await page.screenshot({ path: `tmp/signal-${theme}-${width}.png`, fullPage: true })
+    for (const [name, file] of [['Diagnóstico', 'signal'], ['Ficha del tag', 'tag']]) {
+      await page.getByRole('button', { name, exact: true }).click()
+      for (const width of [1440, 390, 320]) {
+        await page.setViewportSize({ width, height: 960 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
+        const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+        expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([])
+        await page.screenshot({ path: `tmp/${file}-${theme}-${width}.png`, fullPage: true })
+      }
     }
   })
 }

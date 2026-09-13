@@ -35,6 +35,7 @@ export default function App() {
                 ['plan', 'Plano'],
                 ['insights', 'Análisis'],
                 ['signal', 'Diagnóstico'],
+                ['tag', 'Ficha del tag'],
               ] as const
             ).map(([p, label]) => (
               <button
@@ -54,7 +55,7 @@ export default function App() {
       </header>
       <ConnectionError />
 
-      <Workspace page={page} />
+      <Workspace page={page} onNavigate={setPage} />
     </div>
   )
 }

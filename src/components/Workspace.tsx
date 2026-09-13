@@ -8,8 +8,9 @@ import { TagList, SelectedLiveInfo, Overview, HistoryOverview, LiveMap, ReplayMa
 import type { Mode, Page } from '../types'
 import { useHistory } from './useHistory'
 import { SignalDiagnostics } from './SignalDiagnostics'
+import { TagProfile } from './TagProfile'
 
-export function Workspace({ page }: { page: Page }) {
+export function Workspace({ page, onNavigate }: { page: Page; onNavigate: (page: Page) => void }) {
   const demo = useStore(s => s.status === 'demo')
   const tags = useStore(s => s.tags)
   const selectedTag = useStore(s => s.selectedTag)
@@ -28,6 +29,10 @@ export function Workspace({ page }: { page: Page }) {
     if (previousPage.current !== page) main.current?.querySelector<HTMLElement>('h2')?.focus()
     previousPage.current = page
   }, [page])
+  function openMap(nextMode: Mode) {
+    setMode(nextMode)
+    onNavigate('plan')
+  }
 
   return (
       <div className="workspace">
@@ -132,6 +137,9 @@ export function Workspace({ page }: { page: Page }) {
             </>
           ) : page === 'signal' ? (
             <SignalDiagnostics tag={tags.find(t => t.id === selectedTag)} period={period} history={history} />
+          ) : page === 'tag' ? (
+            <TagProfile tag={tags.find(t => t.id === selectedTag)} period={period} history={history}
+              onOpenMap={openMap} onOpenSignal={() => onNavigate('signal')} />
           ) : (
             <InsightsPage key={JSON.stringify([period.start.getTime(), period.end.getTime(), demo, tagIds])}
               status={demo ? 'demo' : 'online'} tags={tags} tagIds={tagIds} period={period} />
