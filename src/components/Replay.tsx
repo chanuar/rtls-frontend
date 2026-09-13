@@ -14,15 +14,18 @@ export function useReplay(samples: Sample[], active = true) {
     }
   }, [samples])
 
-  const [cursor, setCursor] = useState<number>(0)
+  const [previousRange, setPreviousRange] = useState(range)
+  const [cursor, setCursor] = useState(range?.start ?? 0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(16)
   const lastTick = useRef<number>(0)
 
-  useEffect(() => {
+  // Reset before children commit, so an old cursor cannot overwrite a first interaction.
+  if (previousRange !== range) {
+    setPreviousRange(range)
     setCursor(range?.start ?? 0)
     setPlaying(false)
-  }, [range])
+  }
 
   useEffect(() => {
     if (!active) setPlaying(false)
