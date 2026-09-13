@@ -27,15 +27,6 @@ async function setup(page: Page) {
 test('real React loads history, changes identity and cleans up StrictMode resources', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
-  await page.addInitScript(() => {
-    const active = new Set<number>()
-    const start = window.setInterval.bind(window), stop = window.clearInterval.bind(window)
-    window.setInterval = ((...args: Parameters<typeof start>) => {
-      const id = start(...args); active.add(id); return id
-    }) as typeof window.setInterval
-    window.clearInterval = id => { active.delete(id!); stop(id) }
-    Object.assign(window, { activeIntervals: active })
-  })
   const sockets = await setup(page)
   await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
   await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
@@ -45,6 +36,7 @@ test('real React loads history, changes identity and cleans up StrictMode resour
   await page.getByRole('button', { name: 'Análisis', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Analizar periodo' })).toBeVisible()
   await expect.poll(() => sockets.size).toBe(1)
+  expect(await page.evaluate(() => (window as any).activeIntervals.size)).toBeGreaterThan(0)
   await page.evaluate(() => (window as any).unmountApp())
   await expect.poll(() => page.evaluate(() => (window as any).activeIntervals.size)).toBe(0)
   await expect.poll(() => sockets.size).toBe(0)
