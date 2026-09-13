@@ -49,7 +49,7 @@ export const DEMO_HOME_ZONES: Record<string, string> = {
   T3: 'rebotica',
 }
 
-export const TAG_COLORS = ['#00d4ff', '#a78bfa', '#34d399', '#fbbf24', '#fb7185', '#38bdf8']
+export const TAG_COLORS = ['var(--tag-1)', 'var(--tag-2)', 'var(--tag-3)', 'var(--tag-4)', 'var(--tag-5)', 'var(--tag-6)']
 
 export function tagColor(tagId: string, tagIds: string[]): string {
   const i = Math.max(0, tagIds.indexOf(tagId))

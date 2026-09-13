@@ -23,11 +23,10 @@ interface Props {
   heat?: { cell: number; bins: HeatBin[] } | null
 }
 
-const QUALITY_COLOR = { ok: '#34d399', warn: '#fbbf24', bad: '#f87171' } as const
+const QUALITY_COLOR = { ok: 'var(--color-ok)', warn: 'var(--color-warn)', bad: 'var(--color-danger)' } as const
 
 function heatColor(t: number): string {
-  const hue = 195 * (1 - t)
-  return `hsl(${hue} 90% 55%)`
+  return `color-mix(in oklab, var(--heat-low), var(--heat-high) ${t * 100}%)`
 }
 
 const TagLabel = memo(function TagLabel({ label, color, markerX, mapWidth }: {
@@ -93,10 +92,10 @@ export function FloorPlan(p: Props) {
       style={{ maxHeight: '100%' }}
     >
       {gridLines.v.map((x) => (
-        <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="rgba(148,163,184,0.06)" />
+        <line key={`v${x}`} x1={X(x)} y1={0} x2={X(x)} y2={H} stroke="var(--map-grid)" />
       ))}
       {gridLines.h.map((y) => (
-        <line key={`h${y}`} x1={0} y1={Y(y)} x2={W} y2={Y(y)} stroke="rgba(148,163,184,0.06)" />
+        <line key={`h${y}`} x1={0} y1={Y(y)} x2={W} y2={Y(y)} stroke="var(--map-grid)" />
       ))}
 
       {TEST_LAYOUT ? (
@@ -105,8 +104,8 @@ export function FloorPlan(p: Props) {
           y={Y(bounds.areaMaxY)}
           width={(bounds.areaMaxX - bounds.areaMinX) * SCALE}
           height={(bounds.areaMaxY - bounds.areaMinY) * SCALE}
-          fill="rgba(0,212,255,0.025)"
-          stroke="rgba(0,212,255,0.35)"
+          fill="var(--map-zone)"
+          stroke="var(--color-accent)"
           strokeWidth={2}
           strokeDasharray="7 5"
         />
@@ -115,14 +114,14 @@ export function FloorPlan(p: Props) {
           <path
             d={`M ${X(0)} ${Y(ENTRANCE.y0)} L ${X(0)} ${Y(0)} L ${X(FLOOR.depth)} ${Y(0)} L ${X(FLOOR.depth)} ${Y(FLOOR.width)} L ${X(0)} ${Y(FLOOR.width)} L ${X(0)} ${Y(ENTRANCE.y1)}`}
             fill="none"
-            stroke="rgba(148,163,184,0.55)"
+            stroke="var(--map-wall)"
             strokeWidth={3}
             strokeLinejoin="miter"
           />
           <text
             x={X(-0.35)}
             y={Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)}
-            fill="#9baec2"
+            fill="var(--color-muted)"
             fontSize={10}
             textAnchor="middle"
             transform={`rotate(-90 ${X(-0.35)} ${Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)})`}
@@ -145,15 +144,15 @@ export function FloorPlan(p: Props) {
             width={z.w * SCALE}
             height={z.h * SCALE}
             rx={6}
-            fill={hoverZone === z.id ? 'rgba(0,212,255,0.06)' : 'rgba(148,163,184,0.03)'}
-            stroke={hoverZone === z.id ? 'rgba(0,212,255,0.35)' : 'rgba(148,163,184,0.18)'}
+            fill={hoverZone === z.id ? 'var(--map-zone-hover)' : 'var(--map-zone)'}
+            stroke={hoverZone === z.id ? 'var(--color-accent)' : 'var(--map-zone-line)'}
             strokeDasharray="5 4"
           />
           {z.w * SCALE >= 90 && (
             <text
               x={X(z.x) + 7}
               y={Y(z.y + z.h) + 15}
-              fill={hoverZone === z.id ? '#69d9eb' : '#9baec2'}
+              fill={hoverZone === z.id ? 'var(--color-accent)' : 'var(--color-muted)'}
               fontSize={10}
               style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
             >
@@ -193,11 +192,11 @@ export function FloorPlan(p: Props) {
             width={10}
             height={10}
             transform={`rotate(45 ${X(a.x)} ${Y(a.y)})`}
-            fill="#101a28"
-            stroke="rgba(0,212,255,0.5)"
+            fill="var(--map-background)"
+            stroke="var(--color-accent)"
             strokeWidth={1.2}
           />
-          <text x={X(a.x) + 10} y={Y(a.y) + 4} fill="#9baec2" fontSize={12} fontFamily="var(--font-mono)">
+          <text x={X(a.x) + 10} y={Y(a.y) + 4} fill="var(--color-muted)" fontSize={12} fontFamily="var(--font-mono)">
             {a.id}
           </text>
           <title>{`${a.id} · (${a.x}, ${a.y}, ${a.z} m)${a.description ? ' · ' + a.description : ''}`}</title>
@@ -226,9 +225,9 @@ export function FloorPlan(p: Props) {
           const stale = p.freshTags !== undefined && !p.freshTags.includes(pos.tag)
           const age = Math.max(0, Math.floor(((p.now ?? Date.now()) - Date.parse(pos.ts)) / 1000))
           const label = stale ? `${pos.tag} · Última posición · hace ${age} s` : pos.tag
-          const color = stale ? '#94a3b8' : tagColor(pos.tag, p.tagIds)
+          const color = stale ? 'var(--color-muted)' : tagColor(pos.tag, p.tagIds)
           const selected = pos.tag === p.selectedTag
-          const q = stale ? '#fbbf24' : QUALITY_COLOR[qualityLevel(pos.quality)]
+          const q = stale ? 'var(--color-warn)' : QUALITY_COLOR[qualityLevel(pos.quality)]
           return (
             <g
               key={pos.tag}
@@ -247,7 +246,7 @@ export function FloorPlan(p: Props) {
               transform={`translate(${X(pos.x)} ${Y(pos.y)})`}
             >
               {selected && !stale && <circle className="tag-pulse" r={9} fill="none" stroke={color} strokeWidth={1.5} />}
-              <circle r={selected ? 8 : 6.5} fill={color} stroke="#060a10" strokeWidth={2} />
+              <circle r={selected ? 8 : 6.5} fill={color} stroke="var(--map-background)" strokeWidth={2} />
               <circle r={selected ? 11.5 : 10} fill="none" stroke={q} strokeWidth={1.5} opacity={0.9} strokeDasharray={stale ? "3 3" : undefined} />
               <TagLabel label={label} color={color} markerX={X(pos.x)} mapWidth={W} />
               <title>{`${pos.tag} · (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) m · rms ${pos.quality.toFixed(2)} m · ${pos.n_anchors} anchors`}</title>
@@ -257,8 +256,8 @@ export function FloorPlan(p: Props) {
 
       {p.mode === 'replay' && p.replayMarker && (
         <g transform={`translate(${X(p.replayMarker.x)} ${Y(p.replayMarker.y)})`}>
-          <circle className="tag-pulse" r={9} fill="none" stroke="#00d4ff" strokeWidth={1.5} />
-          <circle r={8} fill="#00d4ff" stroke="#060a10" strokeWidth={2} />
+          <circle className="tag-pulse" r={9} fill="none" stroke="var(--color-accent)" strokeWidth={1.5} />
+          <circle r={8} fill="var(--color-accent)" stroke="var(--map-background)" strokeWidth={2} />
         </g>
       )}
     </svg>

@@ -1,4 +1,5 @@
 import { test, expect, type Page, type WebSocketRoute } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 test.use({ timezoneId: 'Atlantic/Canary' })
 
@@ -68,3 +69,47 @@ test('map controls, replay time and analysis results expose accessible state wit
   await page.getByRole('button', { name: 'Analizar periodo' }).click()
   await expect(page.getByRole('alert')).toContainText('500')
 })
+
+test('themes follow the system, persist explicit choices and apply before React loads', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await openApp(page)
+  const select = page.getByRole('combobox', { name: 'Tema' })
+  await expect(select).toHaveValue('system')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 24, 21)')
+  await page.emulateMedia({ colorScheme: 'light' })
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+  await select.selectOption('dark')
+  await expect(page.getByLabel('Desde', { exact: true })).toHaveCSS('color-scheme', 'dark')
+  await page.reload()
+  await expect(select).toHaveValue('dark')
+  await page.route('**/src/main.tsx', route => route.abort())
+  await page.reload()
+  expect(await page.locator('html').getAttribute('data-theme')).toBe('dark')
+  await page.unroute('**/src/main.tsx')
+  await page.reload()
+  await select.selectOption('system')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+})
+
+test('theme selection remains usable when local storage is blocked', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Blocked', 'SecurityError') } })
+  })
+  await openApp(page)
+  await page.getByRole('combobox', { name: 'Tema' }).selectOption('dark')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(16, 24, 21)')
+  await page.getByRole('combobox', { name: 'Tema' }).selectOption('light')
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 243, 236)')
+  expect(errors).toEqual([])
+})
+
+for (const theme of ['light', 'dark']) {
+  test(`readable text contrast in the ${theme} theme`, async ({ page }) => {
+    await openApp(page)
+    await page.getByRole('combobox', { name: 'Tema' }).selectOption(theme)
+    const result = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()
+    expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, reason: n.failureSummary })) }))).toEqual([])
+  })
+}

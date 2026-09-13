@@ -4,6 +4,7 @@ import { useStore } from './store'
 import { Workspace } from './components/Workspace'
 import { ConnectionBadge, ConnectionError } from './components/TrackingView'
 import type { Page } from './types'
+import { ThemeSelect } from './components/ThemeSelect'
 
 export default function App() {
   const [page, setPage] = useState<Page>('plan')
@@ -48,7 +49,7 @@ export default function App() {
             ))}
           </nav>
         </div>
-        <ConnectionBadge />
+        <div className="header-status"><ConnectionBadge /><ThemeSelect /></div>
       </header>
       <ConnectionError />
 

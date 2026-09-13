@@ -19,7 +19,7 @@ test('the rendered replay path has a new segment after a gap', () => {
     anchors: [], live: {}, trails: {}, tagIds: [], selectedTag: null, onSelect() {}, mode: 'replay',
     replayPath: [sample(0), sample(5, 2), sample(1200, 20)], replayTime: 1200000,
   }))
-  const paths = [...html.matchAll(/<path d="([^"]+)"[^>]*stroke="(?:rgba\(148,163,184,0.18\)|#00d4ff)"/g)]
+  const paths = [...html.matchAll(/<path d="([^"]+)"[^>]*stroke="var\(--(?:map-path|color-accent)\)"/g)]
   assert.equal(paths.length, 2)
   for (const [, path] of paths) assert.equal(path.replace(/[^ML]/g, ''), 'MLM')
 })

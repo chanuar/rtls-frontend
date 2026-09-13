@@ -130,7 +130,7 @@ export function Workspace({ page }: { page: Page }) {
                     type="checkbox"
                     checked={showHeat}
                     onChange={(e) => setShowHeat(e.target.checked)}
-                    className="accent-[#00d4ff]"
+                    className="accent-accent"
                   />
                   Mapa de calor del periodo
                 </label>

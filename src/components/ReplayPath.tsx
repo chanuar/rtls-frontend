@@ -7,9 +7,9 @@ interface Chunk { start: number; path: string; offsets: number[] }
 
 const ReplayChunk = memo(function ReplayChunk({ chunk, index }: { chunk: Chunk; index: number }) {
   return <>
-    <path d={chunk.path} fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth={1.5} />
+    <path d={chunk.path} fill="none" stroke="var(--map-path)" strokeWidth={1.5} />
     <path d={chunk.path.slice(0, chunk.offsets[index - chunk.start] ?? 0)} fill="none"
-      stroke="#00d4ff" strokeWidth={2} strokeOpacity={0.8} strokeLinejoin="round" />
+      stroke="var(--color-accent)" strokeWidth={2} strokeOpacity={0.8} strokeLinejoin="round" />
   </>
 })
 
