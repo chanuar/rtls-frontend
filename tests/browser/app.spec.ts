@@ -121,6 +121,26 @@ test('history distinguishes idle, loading, empty, single-sample, ready and error
   await expect(page.getByRole('status').filter({ hasText: 'Selecciona un tag' })).toHaveCount(0)
 })
 
+test('loading history from live announces success and opens the existing result with keyboard focus', async ({ page }) => {
+  await setup(page)
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  const confirmation = page.getByRole('status').filter({ hasText: 'Histórico cargado de T0: 3 muestras.' })
+  await expect(confirmation).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Posiciones actuales' })).toBeVisible()
+  await page.getByRole('checkbox', { name: 'Mapa de calor del periodo' }).check()
+  await expect(page.getByText('Más muestras')).toBeVisible()
+  await expect(confirmation).toBeVisible()
+  const open = page.getByRole('button', { name: 'Ver histórico', exact: true })
+  await open.focus()
+  await open.press('Enter')
+  await expect(page.getByRole('heading', { name: 'Recorrido del periodo' })).toBeFocused()
+  await expect(page.getByRole('slider')).toBeVisible()
+  await page.getByRole('button', { name: 'En vivo', exact: true }).click()
+  await page.getByRole('button', { name: 'T1 T1', exact: false }).click()
+  await expect(confirmation).toHaveCount(0)
+  await expect(open).toHaveCount(0)
+})
+
 test('history ignores an old response after changing tag or period', async ({ page }) => {
   await setup(page)
   let release: () => void = () => {}

@@ -20,6 +20,7 @@ export function Workspace({ page }: { page: Page }) {
   const [showHeat, setShowHeat] = useState(false)
   const [period, setPeriod] = useState<Period>(todayPeriod)
   const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches)
+  const title = useRef<HTMLHeadingElement>(null)
 
   const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), demo])
   const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[] } | null>(null)
@@ -171,12 +172,21 @@ export function Workspace({ page }: { page: Page }) {
             <>
               <div className="workspace-title">
                 <div><p className="eyebrow">{mode === 'live' ? 'LOCALIZACIÓN · EN VIVO' : 'LOCALIZACIÓN · HISTÓRICO'}</p>
-                  <h2>{mode === 'live' ? 'Posiciones actuales' : 'Recorrido del periodo'}</h2>
+                  <h2 ref={title} tabIndex={-1}>{mode === 'live' ? 'Posiciones actuales' : 'Recorrido del periodo'}</h2>
                   <p>{mode === 'live' ? 'Consulta los tags y su última posición válida.' : 'Selecciona un tag y carga el periodo que quieras explorar.'}</p>
                 </div>
                 <span className="layout-badge">{TEST_LAYOUT ? 'Área de prueba' : 'Planta principal'}</span>
               </div>
               <Overview mode={mode} sampleCount={trajectory.length} />
+              {mode === 'live' && <div role="status" className={loading || historyLoaded ? 'flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-panel p-3 text-[13px]' : 'sr-only'}>
+                {loading ? 'Cargando jornada…' : historyLoaded && <>
+                  <p>{trajectory.length === 0 ? historyMessage : `Histórico cargado de ${selectedTag}: ${trajectory.length} ${trajectory.length === 1 ? 'muestra' : 'muestras'}.`}</p>
+                  {trajectory.length > 0 && <button type="button" className="primary-button" onClick={() => {
+                    setMode('replay')
+                    title.current?.focus()
+                  }}>Ver histórico</button>}
+                </>}
+              </div>}
               {mode === 'live' && <LiveMap loading={loading} heat={showHeat ? heat : null} />}
             </>
           ) : (
