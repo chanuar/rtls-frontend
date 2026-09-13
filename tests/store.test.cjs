@@ -135,3 +135,24 @@ test('tag refresh completed after shutdown cannot replace the catalogue', async 
   await new Promise(done => setImmediate(done))
   assert.equal(r.useStore.getState().tags, tags)
 })
+
+test('unchanged anchors publish no state and preserve geometry identity', async () => {
+  let description = null
+  const r = runtime({ fetchAnchors: async () => [{ id: 'A0', x: 0, y: 0, z: 3, description }] })
+  await r.useStore.getState().init()
+  const previous = r.useStore.getState().anchors
+  let updates = 0
+  const unsubscribe = r.useStore.subscribe(() => updates++)
+  const refresh = [...r.intervals.values()].find(t => t.ms === 5000).fn
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().anchors, previous)
+  assert.equal(updates, 0)
+  description = 'Entrada'
+  refresh()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(r.useStore.getState().anchors[0].description, description)
+  assert.equal(updates, 1)
+  unsubscribe()
+  r.useStore.getState().stop()
+})

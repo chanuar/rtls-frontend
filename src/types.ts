@@ -52,3 +52,4 @@ export interface Zone {
 export type ConnectionStatus = 'connecting' | 'online' | 'demo'
 
 export type Mode = 'live' | 'replay'
+export type Page = 'plan' | 'insights'

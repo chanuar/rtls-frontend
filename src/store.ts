@@ -128,7 +128,10 @@ function connectWs(get: () => Store) {
       const previous = get().anchors
       const changed = anchors.length !== previous.length || anchors.some(a =>
         !previous.some(b => a.id === b.id && a.x === b.x && a.y === b.y && a.z === b.z))
-      useStore.setState(changed ? { anchors, live: {}, trails: {}, connectionError: null } : { anchors, connectionError: null })
+      if (changed) useStore.setState({ anchors, live: {}, trails: {}, connectionError: null })
+      else if (anchors.some(a => !previous.some(b => a.id === b.id && a.description === b.description))) {
+        useStore.setState({ anchors, connectionError: null })
+      } else if (get().connectionError !== null) useStore.setState({ connectionError: null })
     } catch (error) {
       if (ws !== socket) return
       useStore.setState({ connectionError: error instanceof Error ? error.message : 'Error al actualizar los anchors.' })

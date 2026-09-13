@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type WebSocketRoute } from '@playwright/test'
 
 const today = new Date('2026-09-13T12:00:00Z')
 const samples = [0, 5, 10].map((seconds, i) => ({
@@ -14,7 +14,7 @@ async function setup(page: Page) {
       : path.startsWith('/positions/') ? samples : { cell: 0.5, bins: [] }
     return route.fulfill({ json })
   })
-  const sockets = new Set()
+  const sockets = new Set<WebSocketRoute>()
   await page.routeWebSocket('**/ws/positions', socket => {
     sockets.add(socket)
     socket.onClose(() => sockets.delete(socket))
@@ -149,4 +149,110 @@ test('replay can finish and play again in StrictMode without impure updater warn
     await expect(slider).toHaveValue(String(Date.parse(samples.at(-1)!.ts)))
   }
   expect(errors).toEqual([])
+})
+
+test('freshness, recovery and label placement work in the real SVG', async ({ page }) => {
+  await page.addInitScript(() => {
+    const measure = SVGTextElement.prototype.getComputedTextLength
+    Object.assign(window, { labelMeasurements: 0 })
+    SVGTextElement.prototype.getComputedTextLength = function () {
+      ;(window as any).labelMeasurements++
+      return measure.call(this)
+    }
+  })
+  const sockets = await setup(page)
+  const send = async (x: number) => {
+    const ts = await page.evaluate(() => new Date().toISOString())
+    sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts, x, y: 2, quality: 0.1, n_anchors: 4 }))
+  }
+  await page.clock.runFor(200)
+  await send(27.5)
+  const marker = page.locator('svg [role="button"]').first()
+  await expect(marker).toHaveAttribute('aria-label', 'Seleccionar T0')
+  await expect(marker.locator('.tag-pulse')).toHaveCount(1)
+  const original = await marker.getAttribute('transform')
+  const measurements = await page.evaluate(() => (window as any).labelMeasurements)
+  await page.clock.runFor(1000)
+  expect(await page.evaluate(() => (window as any).labelMeasurements)).toBe(measurements)
+  await page.clock.runFor(11000)
+  await expect(marker).toHaveAttribute('aria-label', /Última posición/)
+  await expect(marker).toHaveAttribute('transform', original!)
+  await expect(marker.locator('.tag-pulse')).toHaveCount(0)
+  const labelFits = await marker.locator('text').evaluate(node => {
+    const text = node as SVGTextElement, svg = text.ownerSVGElement!
+    const box = text.getBBox(), matrix = text.parentElement!.getAttribute('transform')!.match(/translate\(([^ ]+)/)!
+    return Number(matrix[1]) + box.x >= 0 && Number(matrix[1]) + box.x + box.width <= svg.viewBox.baseVal.width
+  })
+  expect(labelFits).toBe(true)
+  await send(2)
+  await expect(marker).toHaveAttribute('aria-label', 'Seleccionar T0')
+  sockets.values().next().value!.close()
+  await expect(marker).toHaveAttribute('aria-label', /Última posición/)
+  await expect(marker).toHaveCount(1)
+})
+
+test('changing the period while history loads discards the previous response', async ({ page }) => {
+  await setup(page)
+  let release: () => void = () => {}, requested = false
+  await page.route('**/positions/T0?*', async route => {
+    requested = true
+    await new Promise<void>(resolve => { release = resolve })
+    await route.fulfill({ json: samples })
+  })
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await expect.poll(() => requested).toBe(true)
+  await page.getByRole('button', { name: 'Ayer', exact: true }).click()
+  const response = page.waitForResponse('**/positions/T0?*')
+  release()
+  await response
+  await expect(page.getByRole('slider')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeEnabled()
+})
+
+test('live positions and replay ticks do not rerender the shell, period picker or analysis', async ({ page }) => {
+  await page.addInitScript(() => {
+    const renders: Record<string, number> = {}, latest: Record<string, number> = {}
+    Object.assign(window, {
+      componentRenders: renders,
+      __REACT_DEVTOOLS_GLOBAL_HOOK__: {
+        supportsFiber: true, renderers: new Map(), inject() { return 1 },
+        onCommitFiberRoot(_id: number, root: any) {
+          const visit = (fiber: any) => {
+            if (!fiber) return
+            const name = fiber.type?.name
+            // React's development Profiler records start times; bit 1 marks performed work.
+            if (name && (fiber.flags & 1) && fiber.actualStartTime > (latest[name] ?? -1)) {
+              renders[name] = (renders[name] ?? 0) + 1
+              latest[name] = fiber.actualStartTime
+            }
+            visit(fiber.child); visit(fiber.sibling)
+          }
+          visit(root.current)
+        },
+      },
+    })
+  })
+  const sockets = await setup(page)
+  await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+  const before = await page.evaluate(() => ({ ...(window as any).componentRenders }))
+  expect(before.InsightsPage).toBeGreaterThan(0)
+  for (let i = 0; i < 5; i++) {
+    await page.clock.runFor(200)
+    sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts: await page.evaluate(() => new Date().toISOString()), x: i, y: 2, quality: 0.1, n_anchors: 4 }))
+    await expect(page.locator('.tag-status').first()).toHaveText('En vivo')
+  }
+  const after = await page.evaluate(() => ({ ...(window as any).componentRenders }))
+  for (const name of ['App', 'Workspace', 'InsightsPage', 'PeriodPicker']) expect(after[name], name).toBe(before[name])
+  expect(after.TagList).toBeGreaterThan(before.TagList)
+  await page.getByRole('button', { name: 'Plano', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+  await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+  await page.getByRole('button', { name: '×1', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducir jornada' }).click()
+  const playing = await page.evaluate(() => ({ ...(window as any).componentRenders }))
+  await page.clock.runFor(500)
+  const played = await page.evaluate(() => ({ ...(window as any).componentRenders }))
+  for (const name of ['App', 'Workspace', 'PeriodPicker']) expect(played[name], name).toBe(playing[name])
+  expect(played.ReplayMap).toBeGreaterThan(playing.ReplayMap)
 })

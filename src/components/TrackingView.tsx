@@ -1,0 +1,166 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { TEST_LAYOUT, isFresh, tagColor } from '../config'
+import { useStore } from '../store'
+import { FloorPlan } from './FloorPlan'
+import { LiveInfo } from './Stats'
+import { ReplayBar, useReplay } from './Replay'
+import type { Heatmap, Mode, Page, Sample } from '../types'
+
+const STATUS = {
+  online: { label: 'EN VIVO', dot: 'bg-ok' },
+  demo: { label: 'DEMO', dot: 'bg-warn' },
+  connecting: { label: 'CONECTANDO…', dot: 'bg-muted' },
+} as const
+
+function useNow() {
+  const [, setNow] = useState(Date.now)
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+  return Date.now()
+}
+
+function useLivePositions() {
+  const status = useStore(s => s.status)
+  const live = useStore(s => s.live)
+  const now = useNow()
+  const freshLive = Object.fromEntries(Object.entries(live).filter(([, p]) =>
+    (status === 'online' || status === 'demo') && isFresh(p, now)))
+  return { status, live, freshLive, now }
+}
+
+export function ConnectionBadge() {
+  const { status, freshLive } = useLivePositions()
+  const st = status === 'online' && !Object.keys(freshLive).length
+    ? { label: 'CONECTADO · SIN POSICIONES RECIENTES', dot: 'bg-warn' } : STATUS[status]
+  return <div className="connection-badge" role="status">
+    <span className={`h-1.5 w-1.5 rounded-full ${st.dot} ${status === 'online' ? 'animate-pulse' : ''}`} />
+    <span className="text-[11px] font-medium tracking-wide">{st.label}</span>
+  </div>
+}
+
+export function ConnectionError() {
+  const error = useStore(s => s.connectionError)
+  return error && <p role="alert" className="px-5 py-2 text-[12px] text-warn">{error}</p>
+}
+
+export function TagList({ page }: { page: Page }) {
+  const tags = useStore(s => s.tags)
+  const selectedTag = useStore(s => s.selectedTag)
+  const select = useStore(s => s.select)
+  const { live, freshLive } = useLivePositions()
+  const tagIds = useMemo(() => tags.map(t => t.id), [tags])
+  return (
+          <section>
+            <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
+              {page === 'insights' ? 'Tags analizados' : 'Seleccionar tag'}
+            </p>
+            <div className="flex flex-col gap-1">
+              {tags.length === 0 && (
+                <p className="empty-note">Todavía no hay tags disponibles. Se mostrarán al recibir datos del sistema.</p>
+              )}
+              {tags.map((t) => {
+                const color = tagColor(t.id, tagIds)
+                const isSel = t.id === selectedTag && page === 'plan'
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => select(t.id)}
+                    aria-pressed={isSel}
+                    disabled={page === 'insights'}
+                    className={`flex items-center gap-2.5 rounded-md border px-2.5 py-2 text-left ${
+                      isSel ? 'border-accent/40 bg-accent/8' : 'border-transparent hover:bg-panel'
+                    } disabled:cursor-default disabled:hover:bg-transparent`}
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12px]">{t.employee ?? t.id}</span>
+                      <span className="block font-mono text-[10px] text-muted">{t.id}</span>
+                    </span>
+                    <span className={`tag-status ${freshLive[t.id] ? 'text-ok' : 'text-muted'}`}>
+                      {freshLive[t.id] ? 'En vivo' : live[t.id] ? 'Sin actualizar' : 'Sin datos'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+  )
+}
+
+export function SelectedLiveInfo() {
+  const pos = useStore(s => s.selectedTag ? s.live[s.selectedTag] ?? null : null)
+  const status = useStore(s => s.status)
+  const now = useNow()
+  return <LiveInfo pos={pos} stale={!!pos && (status === 'connecting' || !isFresh(pos, now))} now={now} />
+}
+
+export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: number }) {
+  const tagCount = useStore(s => s.tags.length)
+  const anchorCount = useStore(s => s.anchors.length)
+  const selectedTag = useStore(s => s.selectedTag)
+  const { live, freshLive } = useLivePositions()
+  const selectedLive = selectedTag ? live[selectedTag] : null
+  return (
+              <div className="overview" aria-label="Resumen del sistema">
+                <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tagCount}</small></strong></div>
+                <div><span>Anchors configurados</span><strong>{anchorCount}<small> referencias</small></strong></div>
+                <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : sampleCount}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : ' posiciones'}</small></strong></div>
+              </div>
+  )
+}
+
+function MapCard({ mode, loading, heat, children, emptyState }: {
+  mode: Mode; loading: boolean; heat: Heatmap | null; children: ReactNode; emptyState?: ReactNode
+}) {
+  return <div className="map-card" aria-busy={loading}>
+    <div className="map-heading"><div><span className="map-indicator" /> <h3>{TEST_LAYOUT ? 'Plano de prueba' : 'Plano de la farmacia'}</h3></div>
+      <span>{mode === 'live' ? 'Seguimiento en vivo' : 'Reproducción'}{heat ? ' · mapa de calor' : ''}</span>
+    </div>
+    <div className="map-stage" role="region" aria-label="Plano desplazable" tabIndex={0}>
+      {children}
+    </div>
+    {emptyState}
+    <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span className="legend-scale">Cuadrícula · 1 m</span>
+      {heat && <span>Menos <i className="heat-scale" /> Más muestras</span>}
+    </div>
+  </div>
+}
+
+export function LiveMap({ loading, heat }: { loading: boolean; heat: Heatmap | null }) {
+  const anchors = useStore(s => s.anchors)
+  const tags = useStore(s => s.tags)
+  const trails = useStore(s => s.trails)
+  const selectedTag = useStore(s => s.selectedTag)
+  const select = useStore(s => s.select)
+  const { status, live, freshLive, now } = useLivePositions()
+  const tagIds = useMemo(() => tags.map(t => t.id), [tags])
+  const freshTrails = Object.fromEntries(Object.entries(trails).filter(([tag]) => tag in freshLive))
+  return <MapCard mode="live" loading={loading} heat={heat} emptyState={Object.keys(live).length === 0 && (
+    <div className="map-message" role="status"><strong>{status === 'connecting' ? 'Conectando con tu espacio' : 'Esperando posiciones válidas'}</strong>
+      <span>{status === 'connecting' ? 'El plano se actualizará cuando el backend esté disponible.' : 'Los tags aparecerán aquí cuando lleguen nuevas medidas.'}</span></div>
+  )}>
+    <FloorPlan anchors={anchors} live={live} freshTags={Object.keys(freshLive)} now={now} trails={freshTrails}
+      tagIds={tagIds} selectedTag={selectedTag} onSelect={select} mode="live" heat={heat} />
+  </MapCard>
+}
+
+export function ReplayMap({ active, samples, loading, heat }: {
+  active: boolean; samples: Sample[]; loading: boolean; heat: Heatmap | null
+}) {
+  const anchors = useStore(s => s.anchors)
+  const replay = useReplay(samples, active)
+  if (!active) return null
+  return <>
+    <MapCard mode="replay" loading={loading} heat={heat}>
+      <FloorPlan anchors={anchors} live={{}} trails={{}} tagIds={[]} selectedTag={null} onSelect={() => {}}
+        mode="replay" replayPath={samples} replayMarker={replay.marker} replayTime={replay.cursor} heat={heat} />
+    </MapCard>
+    {samples.length > 1 ? <ReplayBar replay={replay} /> : (
+      <div className="border-t border-line px-5 py-3 text-[12px] text-muted">
+        Selecciona un empleado y un periodo, y pulsa «Cargar jornada» para reproducir sus movimientos.
+      </div>
+    )}
+  </>
+}
