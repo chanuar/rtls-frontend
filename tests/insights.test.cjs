@@ -4,6 +4,17 @@ const { load } = require('./load.cjs')
 const { generateInsights } = load('src/lib/insights.ts')
 const sample = seconds => ({ ts: new Date(seconds * 1000).toISOString(), x: 1, y: 1, quality: 0.1, n_anchors: 4 })
 
+test('sample and observed-time thresholds remain distinct for gaps and dwell', () => {
+  const beforeGap = Array.from({ length: 10 }, (_, i) => sample(i * 5))
+  const withGap = [...beforeGap, sample(45 + 900)]
+  assert.equal(generateInsights({ T0: withGap.slice(1) }, []).length, 0)
+  assert.deepEqual(Array.from(generateInsights({ T0: withGap }, []), i => i.id), ['gap-T0-10'])
+  assert.equal(generateInsights({ T0: [...beforeGap, sample(45 + 899)] }, []).length, 0)
+  const halfHour = Array.from({ length: 361 }, (_, i) => sample(i * 5))
+  assert.equal(generateInsights({ T0: halfHour.slice(0, -1) }, []).some(i => i.id === 'dwell-T0'), false)
+  assert.equal(generateInsights({ T0: halfHour }, []).some(i => i.id === 'dwell-T0'), true)
+})
+
 test('low movement works without zones and still requires two observed hours', () => {
   const { generateInsights: withoutZones } = load('src/lib/insights.ts', {
     '../config': { ZONES: [], zoneAt: () => null, zoneName: id => id },
