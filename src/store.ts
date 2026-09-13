@@ -122,11 +122,14 @@ function connectWs(get: () => Store) {
   async function refreshTags() {
     if (refreshingTags) return
     refreshingTags = true
+    const knownIds = new Set(get().tags.map(t => t.id))
     try {
       const tags = await fetchTags()
       if (ws !== socket) return
+      const discovered = get().tags.filter(t => !knownIds.has(t.id) && !tags.some(received => received.id === t.id))
+      const catalogue = discovered.length ? [...tags, ...discovered] : tags
       const selected = get().selectedTag
-      useStore.setState({ tags, selectedTag: tags.some(t => t.id === selected) ? selected : tags[0]?.id ?? null, tagError: null })
+      useStore.setState({ tags: catalogue, selectedTag: catalogue.some(t => t.id === selected) ? selected : catalogue[0]?.id ?? null, tagError: null })
     } catch (error) {
       if (ws !== socket) return
       useStore.setState({ tagError: error instanceof Error ? error.message : 'Error al actualizar los tags.' })

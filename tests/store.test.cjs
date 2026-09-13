@@ -149,6 +149,29 @@ test('tag refresh completed after shutdown cannot replace the catalogue', async 
   assert.equal(r.useStore.getState().tags, tags)
 })
 
+test('catalogue refresh preserves concurrent discoveries while applying removals and metadata', async () => {
+  let resolve, calls = 0
+  const initial = [{ id: 'removed', employee: null, active: true }, { id: 'known', employee: 'Antes', active: true }]
+  const received = [{ id: 'known', employee: 'Después', active: false }, { id: 'T1', employee: 'Nuevo', active: true }]
+  const r = runtime({ fetchTags: () => ++calls === 1 ? Promise.resolve(initial) : new Promise(done => { resolve = done }) })
+  await r.useStore.getState().init()
+  r.sockets[0].onopen()
+  r.useStore.getState()._apply(position)
+  r.useStore.getState()._apply({ ...position, tag: 'T1' })
+  r.useStore.getState().select('T0')
+
+  resolve(received)
+  await new Promise(done => setImmediate(done))
+
+  assert.deepEqual(Array.from(r.useStore.getState().tags, t => [t.id, t.employee, t.active]), [
+    ['known', 'Después', false], ['T1', 'Nuevo', true], ['T0', null, true],
+  ])
+  assert.equal(r.useStore.getState().selectedTag, 'T0')
+  assert.equal(r.useStore.getState().live.T0, position)
+  assert.equal(received.length, 2)
+  r.useStore.getState().stop()
+})
+
 test('unchanged anchors publish no state and preserve geometry identity', async () => {
   let description = null
   const r = runtime({ fetchAnchors: async () => [{ id: 'A0', x: 0, y: 0, z: 3, description }] })

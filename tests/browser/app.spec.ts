@@ -166,6 +166,27 @@ test('catalogue error remains visible through anchor refreshes until tags recove
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
+test('catalogue refresh keeps a tag discovered while its older response is pending', async ({ page }) => {
+  const sockets = await setup(page)
+  let pending: import('@playwright/test').Route | undefined
+  await page.route('**/tags', route => { pending = route })
+  sockets.values().next().value!.close()
+  await page.clock.runFor(2100)
+  await expect.poll(() => !!pending && sockets.size === 1).toBe(true)
+  sockets.values().next().value!.send(JSON.stringify({ tag: 'T2', ...samples[0], ts: await page.evaluate(() => new Date().toISOString()) }))
+  const tag = page.getByRole('button', { name: /T2 T2/ })
+  await tag.click()
+
+  await pending!.fulfill({ json: [{ id: 'T0', employee: 'Ana', active: true }] })
+
+  await expect(page.getByRole('button', { name: /Ana/ })).toBeVisible()
+  await expect(tag).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: /T1 T1/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Cargar jornada', exact: true })).toBeEnabled()
+  await page.clock.runFor(5000)
+  await expect(tag).toHaveAttribute('aria-pressed', 'true')
+})
+
 test('invalid live messages explain rejection and cannot block the next valid position', async ({ page }) => {
   const sockets = await setup(page)
   await expect.poll(() => sockets.size).toBe(1)
