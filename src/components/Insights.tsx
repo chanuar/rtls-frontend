@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { ZONES, tagColor, zoneName } from '../config'
 import { fetchPositions } from '../lib/api'
 import { demoTrajectory } from '../lib/demo'
-import { generateInsights, MIN_SAMPLES, MIN_PERIOD_S, LOW_ACTIVITY_MIN_HOURS, LOW_ACTIVITY_M_PER_H, type Insight } from '../lib/insights'
-import { analyzeTrajectory, fmtDuration, MAX_GAP_S, STOP_DURATION_S, STOP_RADIUS_M } from '../lib/trajectory'
+import { analyzePeriod, MIN_SAMPLES, MIN_PERIOD_S, LOW_ACTIVITY_MIN_HOURS, LOW_ACTIVITY_M_PER_H, type Insight } from '../lib/insights'
+import { fmtDuration, MAX_GAP_S, STOP_DURATION_S, STOP_RADIUS_M } from '../lib/trajectory'
 import type { ConnectionStatus, Sample, TagInfo } from '../types'
 import { isValidPeriod, type Period } from './PeriodPicker'
 
@@ -18,7 +18,7 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
   const [insights, setInsights] = useState<Insight[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [summaries, setSummaries] = useState<{ tag: string; count: number; stats: ReturnType<typeof analyzeTrajectory> }[]>([])
+  const [summaries, setSummaries] = useState<ReturnType<typeof analyzePeriod>['summaries']>([])
 
   async function analyze() {
     if (!isValidPeriod(period)) {
@@ -39,8 +39,9 @@ export function InsightsPage({ status, tags, tagIds, period }: Props) {
         )
         for (const [id, samples] of results) data[id] = samples
       }
-      setInsights(generateInsights(data, tags))
-      setSummaries(Object.entries(data).map(([tag, samples]) => ({ tag, count: samples.length, stats: analyzeTrajectory(samples) })))
+      const result = analyzePeriod(data, tags)
+      setInsights(result.insights)
+      setSummaries(result.summaries)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al analizar el periodo')
     } finally {

@@ -1,7 +1,8 @@
 const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { load } = require('./load.cjs')
-const { generateInsights } = load('src/lib/insights.ts')
+const { analyzePeriod } = load('src/lib/insights.ts')
+const generateInsights = (data, tags) => analyzePeriod(data, tags).insights
 const sample = seconds => ({ ts: new Date(seconds * 1000).toISOString(), x: 1, y: 1, quality: 0.1, n_anchors: 4 })
 
 test('sample and observed-time thresholds remain distinct for gaps and dwell', () => {
@@ -16,14 +17,22 @@ test('sample and observed-time thresholds remain distinct for gaps and dwell', (
 })
 
 test('low movement works without zones and still requires two observed hours', () => {
-  const { generateInsights: withoutZones } = load('src/lib/insights.ts', {
+  const { analyzePeriod: withoutZones } = load('src/lib/insights.ts', {
     '../config': { ZONES: [], zoneAt: () => null, zoneName: id => id },
   })
   const stationary = Array.from({ length: 1441 }, (_, i) => sample(i * 5))
-  const result = withoutZones({ T0: stationary }, [])
+  const result = withoutZones({ T0: stationary }, []).insights
   assert.equal(result.length, 1)
   assert.equal(result[0].id, 'low-T0')
-  assert.equal(withoutZones({ T0: stationary.slice(0, -1) }, []).length, 0)
+  assert.equal(withoutZones({ T0: stationary.slice(0, -1) }, []).insights.length, 0)
+})
+
+test('period summaries retain empty and limited tags and exclude gaps from observed time', () => {
+  const result = analyzePeriod({ empty: [], one: [sample(0)], gap: [sample(0), sample(5), sample(900)] }, [])
+  assert.deepEqual(Array.from(result.summaries, s => [s.tag, s.count, s.stats.durationS]), [
+    ['empty', 0, 0], ['one', 1, 0], ['gap', 3, 5],
+  ])
+  assert.equal(result.insights.length, 0)
 })
 
 test('analysis renders summaries and distinguishes empty, limited and sufficient data without zones', async () => {

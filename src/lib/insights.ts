@@ -22,18 +22,19 @@ const COPRESENCE_MIN_S = 45 * 60
 const COPRESENCE_SHARE = 0.35
 export const LOW_ACTIVITY_M_PER_H = 60
 
-export function generateInsights(
+export function analyzePeriod(
   data: Record<string, Sample[]>,
   tags: TagInfo[],
-): Insight[] {
+) {
   const out: Insight[] = []
   const name = (id: string) => tags.find((t) => t.id === id)?.employee ?? id
-
+  const summaries = Object.entries(data).map(([tag, samples]) => ({
+    tag, count: samples.length, stats: analyzeTrajectory(samples),
+  }))
   const entries = Object.entries(data).filter(([, s]) => s.length >= MIN_SAMPLES)
 
-  for (const [tag, samples] of entries) {
-    const stats = analyzeTrajectory(samples)
-    if (stats.durationS < MIN_PERIOD_S) continue
+  for (const { tag, count, stats } of summaries) {
+    if (count < MIN_SAMPLES || stats.durationS < MIN_PERIOD_S) continue
     const top = stats.perZoneS[0]
     const share = top ? top.seconds / stats.durationS : 0
     if (top && share >= DWELL_INFO) {
@@ -129,5 +130,8 @@ export function generateInsights(
     }
   }
 
-  return out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
+  return {
+    insights: out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1)),
+    summaries,
+  }
 }
