@@ -69,7 +69,7 @@ export const useStore = create<Store>((set, get) => ({
 
   _apply: (p) => {
     if (!p || typeof p.tag !== 'string' || !p.tag.trim() ||
-        typeof p.ts !== 'string' || !Number.isFinite(Date.parse(p.ts)) ||
+        typeof p.ts !== 'string' || !Number.isFinite(Date.parse(p.ts)) || Date.parse(p.ts) > Date.now() ||
         !Number.isFinite(p.x) || !Number.isFinite(p.y) ||
         !Number.isFinite(p.quality) || p.quality < 0 ||
         !Number.isInteger(p.n_anchors) || p.n_anchors < 3) return

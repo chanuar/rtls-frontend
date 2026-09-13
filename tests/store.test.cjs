@@ -64,6 +64,17 @@ test('reject malformed and older positions before updating the store', () => {
   assert.equal(useStore.getState().trails.T0.length, 1)
 })
 
+test('a rejected future position cannot block the next valid measurement', () => {
+  const { useStore } = runtime()
+  const present = { ...position, ts: new Date().toISOString() }
+  const before = useStore.getState()
+  useStore.getState()._apply({ ...present, ts: new Date(Date.now() + 86400000).toISOString(), x: 9 })
+  assert.equal(useStore.getState(), before)
+  useStore.getState()._apply(present)
+  assert.equal(useStore.getState().live.T0.x, present.x)
+  assert.equal(useStore.getState().trails.T0.length, 1)
+})
+
 test('startup failure retries the backend without manufacturing demo positions', async () => {
   let fail = true
   const r = runtime({ fetchAnchors: async () => { if (fail) throw Error('offline'); return [] } })
