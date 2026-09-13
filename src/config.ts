@@ -30,16 +30,6 @@ const PHARMACY_ZONES: Zone[] = [
   { id: 'oficina', name: 'Oficina', x: 19.2, y: 0, w: 3.0, h: FLOOR.width },
   { id: 'almacen', name: 'Almacén', x: 22.2, y: 0, w: 5.65, h: FLOOR.width },
 ]
-// const PHARMACY_ZONES: Zone[] = [
-//   { id: 'atencion', name: 'Atención al público', x: 0.15, y: 0.15, w: 13.95, h: 5.3 },
-//   { id: 'rebotica', name: 'Rebotica', x: 14.1, y: 0.15, w: 5.1, h: 5.3 },
-//   { id: 'oficina', name: 'Oficina', x: 19.2, y: 0.15, w: 3.0, h: 2.95 },
-//   { id: 'distribuidor', name: 'Distribuidor', x: 19.2, y: 3.1, w: 1.45, h: 2.35 },
-//   { id: 'office', name: 'Office', x: 20.65, y: 3.1, w: 1.55, h: 2.35 },
-//   { id: 'almacen', name: 'Almacén', x: 22.2, y: 0.15, w: 5.65, h: 3.4 },
-//   { id: 'aseo', name: 'Aseo', x: 22.2, y: 3.55, w: 1.75, h: 1.9 },
-//   { id: 'patio', name: 'Patio', x: 23.95, y: 3.55, w: 3.9, h: 1.9 },
-// ]
 
 export const ZONES: Zone[] = TEST_LAYOUT ? [] : PHARMACY_ZONES
 
