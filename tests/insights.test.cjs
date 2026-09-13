@@ -37,7 +37,7 @@ test('analysis renders summaries and distinguishes empty, limited and sufficient
     const props = { status: 'online', tags: [{ id: 'T0' }], tagIds: ['T0'],
       period: { start: new Date(0), end: new Date(7200000) } }
     const initial = InsightsPage(props)
-    await initial.props.children.props.children[0].props.children[1].props.onClick()
+    await initial.props.children[0].props.children[1].props.onClick()
     // The click handler intentionally returns void; settle the fetch and Promise.all.
     await new Promise(done => setImmediate(done))
     index = 0

@@ -18,14 +18,14 @@ export default function App() {
         <div className="header-navigation">
           <div className="flex items-center gap-3">
             <div className="brand-mark" aria-hidden="true">
-              UWB
+              +
             </div>
             <div>
               <h1 className="text-[15px] font-semibold tracking-tight">
-                RTLS · {TEST_LAYOUT ? 'Prueba UWB' : 'Farmacia'}
+                {TEST_LAYOUT ? 'Laboratorio UWB' : 'Farmacia · RTLS'}
               </h1>
-              <p className="mt-0.5 text-[11px] text-muted">
-                Localización en interiores
+              <p className="mt-0.5 text-[13px] text-muted">
+                Localización UWB
               </p>
             </div>
           </div>
@@ -40,7 +40,7 @@ export default function App() {
                 key={p}
                 onClick={() => setPage(p)}
                 aria-current={page === p ? 'page' : undefined}
-                className={`rounded px-3 py-1 text-[12px] ${
+                className={`rounded px-3 py-1 text-[13px] ${
                   page === p ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
                 }`}
               >

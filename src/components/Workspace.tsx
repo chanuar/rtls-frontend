@@ -19,6 +19,7 @@ export function Workspace({ page }: { page: Page }) {
   const [mode, setMode] = useState<Mode>('live')
   const [showHeat, setShowHeat] = useState(false)
   const [period, setPeriod] = useState<Period>(todayPeriod)
+  const [filtersOpen, setFiltersOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches)
 
   const queryKey = JSON.stringify([selectedTag, period.start.getTime(), period.end.getTime(), demo])
   const [loaded, setLoaded] = useState<{ key: string; trajectory: Sample[] } | null>(null)
@@ -84,7 +85,9 @@ export function Workspace({ page }: { page: Page }) {
   return (
       <div className="workspace">
         <aside className="sidebar" aria-label="Filtros y detalle del tag">
-          <div className="sidebar-heading"><span className="eyebrow">CONTROL DE SEGUIMIENTO</span><h2>Tu espacio, en detalle</h2></div>
+          <details open={filtersOpen} onToggle={event => setFiltersOpen(event.currentTarget.open)}>
+          <summary className="filter-summary">Filtros y estado <span>{selectedTag ?? 'Sin tag'}</span></summary>
+          <div className="sidebar-content">
           {page === 'plan' && (
             <div className="grid grid-cols-2 gap-1 rounded-md border border-line bg-panel p-1">
               {(['live', 'replay'] as const).map((m) => (
@@ -92,7 +95,7 @@ export function Workspace({ page }: { page: Page }) {
                   key={m}
                   onClick={() => setMode(m)}
                   aria-pressed={mode === m}
-                  className={`rounded px-2 py-1.5 text-[12px] ${
+                  className={`rounded px-2 py-1.5 text-[13px] ${
                     mode === m ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
                   }`}
                 >
@@ -105,7 +108,7 @@ export function Workspace({ page }: { page: Page }) {
           <TagList page={page} />
 
           <section>
-            <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">Periodo</p>
+            <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">Periodo</p>
             <PeriodPicker value={period} onChange={setPeriod} />
             {page === 'plan' && (
               <>
@@ -116,7 +119,7 @@ export function Workspace({ page }: { page: Page }) {
                 >
                   {loading ? 'Cargando…' : 'Cargar jornada'}
                 </button>
-                {loadError && <p role="alert" className="mt-2 text-[12px] text-warn">{loadError}</p>}
+                {loadError && <p role="alert" className="mt-2 text-[13px] text-warn">{loadError}</p>}
               </>
             )}
           </section>
@@ -124,8 +127,8 @@ export function Workspace({ page }: { page: Page }) {
           {page === 'plan' && (
             <>
               <section>
-                <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">Capas</p>
-                <label className="flex cursor-pointer items-center gap-2 text-[12px]">
+                <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">Capas</p>
+                <label className="flex min-h-8 cursor-pointer items-center gap-2 text-[13px]">
                   <input
                     type="checkbox"
                     checked={showHeat}
@@ -134,15 +137,15 @@ export function Workspace({ page }: { page: Page }) {
                   />
                   Mapa de calor del periodo
                 </label>
-                {showHeat && heatError && <p role="alert" className="mt-1 text-[11px] text-warn">Mapa de calor: {heatError}</p>}
-                {heatLoading && <p role="status" className="mt-1 text-[11px] text-muted">Cargando mapa de calor…</p>}
+                {showHeat && heatError && <p role="alert" className="mt-1 text-[13px] text-warn">Mapa de calor: {heatError}</p>}
+                {heatLoading && <p role="status" className="mt-1 text-[13px] text-muted">Cargando mapa de calor…</p>}
                 {showHeat && !heat && !heatLoading && !heatError && (
-                  <p className="mt-1 text-[11px] text-muted">Pulsa «Cargar jornada» para generarlo.</p>
+                  <p className="mt-1 text-[13px] text-muted">Pulsa «Cargar jornada» para generarlo.</p>
                 )}
               </section>
 
               <section className="detail-card">
-                <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
+                <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">
                   {mode === 'live' ? `Estado de ${selectedTag ?? '—'}` : 'Estadísticas de la jornada'}
                 </p>
                 {mode === 'live' ? <SelectedLiveInfo /> : <ReplayStats stats={stats} />}
@@ -153,14 +156,16 @@ export function Workspace({ page }: { page: Page }) {
           <p className="sidebar-footnote">
             Las posiciones se muestran en metros. Una conexión activa no garantiza que haya medidas recientes.
           </p>
+          </div>
+          </details>
         </aside>
 
         <main className="main-content">
           {page === 'plan' ? (
             <>
               <div className="workspace-title">
-                <div><p className="eyebrow">{mode === 'live' ? 'AHORA · VISTA GENERAL' : 'HISTÓRICO · RECORRIDOS'}</p>
-                  <h2>{mode === 'live' ? 'Cada posición, a la vista.' : 'Vuelve a recorrer la jornada.'}</h2>
+                <div><p className="eyebrow">{mode === 'live' ? 'LOCALIZACIÓN · EN VIVO' : 'LOCALIZACIÓN · HISTÓRICO'}</p>
+                  <h2>{mode === 'live' ? 'Posiciones actuales' : 'Recorrido del periodo'}</h2>
                   <p>{mode === 'live' ? 'Consulta los tags y su última posición válida.' : 'Selecciona un tag y carga el periodo que quieras explorar.'}</p>
                 </div>
                 <span className="layout-badge">{TEST_LAYOUT ? 'Área de prueba' : 'Planta principal'}</span>

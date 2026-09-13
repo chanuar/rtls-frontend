@@ -71,8 +71,8 @@ export function ReplayBar({ replay }: BarProps) {
       >
         {playing ? '❚❚' : '▶'}
       </button>
-      <span className="font-mono text-[11px] text-muted tabular-nums">{fmt(cursor)}</span>
-      {!replay.marker && <span className="text-[11px] text-warn">Sin datos en este intervalo</span>}
+      <span className="font-mono text-[13px] text-muted tabular-nums">{fmt(cursor)}</span>
+      {!replay.marker && <span className="text-[13px] text-warn">Sin datos en este intervalo</span>}
       <input
         type="range"
         aria-label="Posición temporal"
@@ -84,14 +84,14 @@ export function ReplayBar({ replay }: BarProps) {
         value={cursor}
         onChange={(e) => setCursor(Number(e.target.value))}
       />
-      <span className="font-mono text-[11px] text-muted tabular-nums">{fmt(range.end)}</span>
+      <span className="font-mono text-[13px] text-muted tabular-nums">{fmt(range.end)}</span>
       <div className="flex gap-1">
         {SPEEDS.map((s) => (
           <button
             key={s}
             onClick={() => setSpeed(s)}
             aria-pressed={speed === s}
-            className={`rounded px-2 py-1 font-mono text-[11px] ${
+            className={`rounded px-2 py-1 font-mono text-[13px] ${
               speed === s ? 'bg-accent/15 text-accent' : 'text-muted hover:text-fg'
             }`}
           >

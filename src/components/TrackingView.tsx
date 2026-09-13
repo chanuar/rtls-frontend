@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { TEST_LAYOUT, isFresh, tagColor } from '../config'
+import { FLOOR, TEST_LAYOUT, isFresh, tagColor } from '../config'
 import { useStore } from '../store'
 import { FloorPlan } from './FloorPlan'
 import { LiveInfo } from './Stats'
@@ -36,13 +36,13 @@ export function ConnectionBadge() {
     ? { label: 'CONECTADO · SIN POSICIONES RECIENTES', dot: 'bg-warn' } : STATUS[status]
   return <div className="connection-badge" role="status">
     <span className={`h-1.5 w-1.5 rounded-full ${st.dot} ${status === 'online' ? 'animate-pulse' : ''}`} />
-    <span className="text-[11px] font-medium tracking-wide">{st.label}</span>
+    <span className="text-[13px] font-medium tracking-wide">{st.label}</span>
   </div>
 }
 
 export function ConnectionError() {
   const error = useStore(s => s.connectionError)
-  return error && <p role="alert" className="px-5 py-2 text-[12px] text-warn">{error}</p>
+  return error && <p role="alert" className="px-5 py-2 text-[13px] text-warn">{error}</p>
 }
 
 export function TagList({ page }: { page: Page }) {
@@ -53,7 +53,7 @@ export function TagList({ page }: { page: Page }) {
   const tagIds = useMemo(() => tags.map(t => t.id), [tags])
   return (
           <section>
-            <p className="mb-2 text-[10px] uppercase tracking-widest text-muted">
+            <p className="mb-2 text-[13px] uppercase tracking-widest text-muted">
               {page === 'insights' ? 'Tags analizados' : 'Seleccionar tag'}
             </p>
             <div className="flex flex-col gap-1">
@@ -75,8 +75,8 @@ export function TagList({ page }: { page: Page }) {
                   >
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[12px]">{t.employee ?? t.id}</span>
-                      <span className="block font-mono text-[10px] text-muted">{t.id}</span>
+                      <span className="block truncate text-[13px]">{t.employee ?? t.id}</span>
+                      <span className="block font-mono text-[13px] text-muted">{t.id}</span>
                     </span>
                     <span className={`tag-status ${freshLive[t.id] ? 'text-ok' : 'text-muted'}`}>
                       {freshLive[t.id] ? 'En vivo' : live[t.id] ? 'Sin actualizar' : 'Sin datos'}
@@ -103,7 +103,7 @@ export function Overview({ mode, sampleCount }: { mode: Mode; sampleCount: numbe
   const { live, freshLive } = useLivePositions()
   const selectedLive = selectedTag ? live[selectedTag] : null
   return (
-              <div className="overview" aria-label="Resumen del sistema">
+              <div className="overview" role="group" aria-label="Resumen del sistema">
                 <div><span>Tags con posición reciente</span><strong>{Object.keys(freshLive).length}<small> / {tagCount}</small></strong></div>
                 <div><span>Anchors configurados</span><strong>{anchorCount}<small> referencias</small></strong></div>
                 <div><span>{mode === 'live' ? 'Tag seleccionado' : 'Muestras del periodo'}</span><strong>{mode === 'live' ? (selectedTag ?? '—') : sampleCount}<small>{mode === 'live' ? (selectedLive ? (freshLive[selectedLive.tag] ? ' · en vivo' : ' · sin actualizar') : ' · sin datos') : ' posiciones'}</small></strong></div>
@@ -132,11 +132,12 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
       {mode === 'live' && <button type="button" disabled={!canCenter} onClick={centerSelection}>Centrar selección</button>}
     </div>
     <p id={hint} className="map-hint">{detail ? 'Detalle · desplázate por el plano con las barras o las flechas del teclado.' : 'Vista general · abre el detalle para leer todas las zonas.'}</p>
+    {!TEST_LAYOUT && <p className="map-dimensions">Entrada a la izquierda · {FLOOR.depth.toLocaleString('es-ES')} m de fondo × {FLOOR.width.toLocaleString('es-ES')} m de ancho</p>}
     <div ref={stage} className="map-stage" data-view={detail ? 'detail' : 'fit'} role="region" aria-label="Plano desplazable" aria-describedby={hint} tabIndex={0}>
       {children}
     </div>
     {emptyState}
-    <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span className="legend-scale">Cuadrícula · 1 m</span>
+    <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span><i className="legend-stale" /> Sin actualizar</span><span className="legend-scale">Cuadrícula · 1 m</span>
       {heat && <span>Menos <i className="heat-scale" /> Más muestras</span>}
     </div>
   </div>
@@ -152,7 +153,7 @@ export function LiveMap({ loading, heat }: { loading: boolean; heat: Heatmap | n
   const tagIds = useMemo(() => tags.map(t => t.id), [tags])
   const freshTrails = Object.fromEntries(Object.entries(trails).filter(([tag]) => tag in freshLive))
   return <MapCard mode="live" loading={loading} heat={heat} emptyState={Object.keys(live).length === 0 && (
-    <div className="map-message" role="status"><strong>{status === 'connecting' ? 'Conectando con tu espacio' : 'Esperando posiciones válidas'}</strong>
+    <div className="map-message" role="status"><strong>{status === 'connecting' ? 'Conectando con el sistema' : 'Esperando posiciones válidas'}</strong>
       <span>{status === 'connecting' ? 'El plano se actualizará cuando el backend esté disponible.' : 'Los tags aparecerán aquí cuando lleguen nuevas medidas.'}</span></div>
   )}>
     <FloorPlan anchors={anchors} live={live} freshTags={Object.keys(freshLive)} now={now} trails={freshTrails}
@@ -172,7 +173,7 @@ export function ReplayMap({ active, samples, loading, heat }: {
         mode="replay" replayPath={samples} replayMarker={replay.marker} replayTime={replay.cursor} heat={heat} />
     </MapCard>
     {samples.length > 1 ? <ReplayBar replay={replay} /> : (
-      <div className="border-t border-line px-5 py-3 text-[12px] text-muted">
+      <div className="border-t border-line px-5 py-3 text-[13px] text-muted">
         Selecciona un empleado y un periodo, y pulsa «Cargar jornada» para reproducir sus movimientos.
       </div>
     )}

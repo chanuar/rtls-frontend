@@ -15,6 +15,9 @@ async function openApp(page: Page) {
   const sockets = new Set<WebSocketRoute>()
   await page.routeWebSocket('**/ws/positions', socket => { sockets.add(socket); socket.onClose(() => sockets.delete(socket)) })
   await page.goto('/')
+  if (!await page.locator('.sidebar details').evaluate(node => (node as HTMLDetailsElement).open)) {
+    await page.locator('.filter-summary').click()
+  }
   await expect(page.getByRole('button', { name: /Ana/ })).toBeVisible()
   return sockets
 }
@@ -106,18 +109,69 @@ test('theme selection remains usable when local storage is blocked', async ({ pa
 })
 
 for (const theme of ['light', 'dark']) {
-  test(`readable text contrast in the ${theme} theme`, async ({ page }) => {
-    await openApp(page)
+  test(`accessible live, stale, replay and analysis states in the ${theme} theme`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 960 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const sockets = await openApp(page)
     await page.getByRole('combobox', { name: 'Tema' }).selectOption(theme)
-    const result = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()
-    expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, reason: n.failureSummary })) }))).toEqual([])
+    const contrast = await page.evaluate(() => {
+      const probe = document.createElement('span')
+      document.body.append(probe)
+      function luminance(variable: string) {
+        probe.style.color = `var(--${variable})`
+        const rgb = getComputedStyle(probe).color.match(/[\d.]+/g)!.slice(0, 3).map(Number)
+          .map(value => value / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+        return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722
+      }
+      const background = luminance('map-zone')
+      const ratios = ['color-muted', 'color-accent', 'color-ok', 'color-warn', 'color-danger', 'map-path', 'map-zone-line', ...[1, 2, 3, 4, 5, 6].map(i => `tag-${i}`)]
+        .map(token => { const ink = luminance(token); return { token, ratio: (Math.max(ink, background) + 0.05) / (Math.min(ink, background) + 0.05) } })
+      probe.remove()
+      return ratios
+    })
+    for (const { token, ratio } of contrast) expect(ratio, token).toBeGreaterThanOrEqual(token.startsWith('map-') ? 3 : 4.5)
+    async function audit(state: string) {
+      const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+      expect(result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, reason: n.failureSummary })) })), state).toEqual([])
+      await page.screenshot({ path: `tmp/design-${theme}-${state}.png`, fullPage: true })
+    }
+    await audit('empty')
+    sockets.values().next().value!.send(JSON.stringify({ tag: 'T0', ts: await page.evaluate(() => new Date().toISOString()), x: 3, y: 2, quality: 0.1, n_anchors: 4 }))
+    await expect(page.getByRole('button', { name: 'Seleccionar T0', exact: true })).toBeVisible()
+    await audit('live')
+    await page.clock.runFor(11000)
+    await audit('stale')
+    await page.getByRole('button', { name: 'Reproducción', exact: true }).click()
+    await page.route('**/positions/*', route => route.fulfill({ json: [0, 5, 10].map(second => ({
+      ts: new Date(Date.parse('2026-09-13T11:59:00Z') + second * 1000).toISOString(), x: second / 5, y: 2, quality: 0.1, n_anchors: 4,
+    })) }))
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await page.getByRole('checkbox').check()
+    await expect(page.getByRole('slider')).toBeVisible()
+    await expect(page.getByText('Más muestras')).toBeVisible()
+    await audit('replay-heat')
+    await page.getByRole('button', { name: 'Ver detalle' }).click()
+    await audit('detail')
+    await page.getByRole('button', { name: 'Análisis', exact: true }).click()
+    await page.getByRole('button', { name: 'Analizar periodo' }).click()
+    await expect(page.getByRole('table')).toBeVisible()
+    await audit('analysis')
+    await page.route('**/positions/*', route => route.fulfill({ status: 500 }))
+    await page.getByRole('button', { name: 'Analizar periodo' }).click()
+    await expect(page.getByRole('alert')).toContainText('500')
+    await audit('error')
+    await page.setViewportSize({ width: 390, height: 844 })
+    await audit('mobile-error')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
   })
 }
 
 for (const width of [1440, 1024, 390]) {
   test(`map labels and selection targets stay legible at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
     const sockets = await openApp(page)
+    if (width < 801) await page.locator('.filter-summary').click()
     for (const [tag, x] of [['T0', 0.1], ['T1', 27.8]] as const) {
       sockets.values().next().value!.send(JSON.stringify({ tag, ts: '2026-09-13T12:00:00Z', x, y: 2, quality: 0.1, n_anchors: 4 }))
     }
@@ -174,4 +228,30 @@ test('mobile filters precede the map in visual and keyboard order', async ({ pag
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Ajustar plano' })).toBeFocused()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390)
+  await page.locator('.filter-summary').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: /Luis/ })).toBeHidden()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Ajustar plano' })).toBeFocused()
 })
+
+for (const width of [320, 640]) {
+  test(`controls and map reflow at ${width} CSS pixels`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 720 })
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' })
+    await openApp(page)
+    await expect(page.getByLabel('Desde', { exact: true })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+    await page.locator('.filter-summary').click()
+    await page.getByRole('button', { name: 'Ver detalle' }).click()
+    const stage = page.getByRole('region', { name: 'Plano desplazable' })
+    await stage.focus()
+    await stage.press('ArrowRight')
+    await page.clock.runFor(500)
+    await expect.poll(() => stage.evaluate(node => node.scrollLeft)).toBeGreaterThan(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width)
+    await page.screenshot({ path: `tmp/design-reflow-${width}.png`, fullPage: true })
+    const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()
+    expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([])
+  })
+}

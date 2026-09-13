@@ -131,7 +131,7 @@ export function FloorPlan(p: Props) {
             strokeWidth={3}
             strokeLinejoin="miter"
           />
-          <text
+          {width >= 600 && <text
             x={X(-0.35)}
             y={Y((ENTRANCE.y0 + ENTRANCE.y1) / 2)}
             fill="var(--color-muted)"
@@ -141,7 +141,7 @@ export function FloorPlan(p: Props) {
             style={{ textTransform: 'uppercase', letterSpacing: '0.12em' }}
           >
             Entrada
-          </text>
+          </text>}
         </>
       )}
 
@@ -175,6 +175,19 @@ export function FloorPlan(p: Props) {
           <title>{`${z.name} · ${(z.w * z.h).toFixed(1)} m²`}</title>
         </g>
       ))}
+
+      {uiScale <= 1.5 && <g fill="var(--color-muted)" fontSize={12 * uiScale} fontFamily="var(--font-mono)" role="group" aria-label="Cotas del plano">
+        <path d={`M ${X(bounds.areaMinX)} ${Y(bounds.areaMinY - 0.2)} v 12 m 0 -6 H ${X(bounds.areaMaxX)} m 0 -6 v 12`}
+          fill="none" stroke="var(--map-wall)" />
+        <text x={X((bounds.areaMinX + bounds.areaMaxX) / 2)} y={Y(bounds.areaMinY - 0.6)} textAnchor="middle">
+          {(bounds.areaMaxX - bounds.areaMinX).toLocaleString('es-ES')} m
+        </text>
+        <path d={`M ${X(bounds.areaMaxX + 0.2)} ${Y(bounds.areaMinY)} h 12 m -6 0 V ${Y(bounds.areaMaxY)} m -6 0 h 12`}
+          fill="none" stroke="var(--map-wall)" />
+        <text textAnchor="middle" transform={`translate(${X(bounds.areaMaxX + 0.6)} ${Y((bounds.areaMinY + bounds.areaMaxY) / 2)}) rotate(-90)`}>
+          {(bounds.areaMaxY - bounds.areaMinY).toLocaleString('es-ES')} m
+        </text>
+      </g>}
 
       {p.heat?.bins.map((b) => {
         const t = b.count / maxHeat

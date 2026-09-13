@@ -43,7 +43,7 @@ npm run build
 - **Mapa de calor:** capa superpuesta generada desde el endpoint `/heatmap` (rejilla de 0,5 m), con escala cian → rojo.
 - **Recomendaciones IA:** segunda página que analiza los movimientos de todos los empleados en un periodo y detecta patrones: permanencias largas en una zona, coincidencias prolongadas entre empleados, pérdidas de señal (≥15 min) y actividad anómalamente baja. Primera versión con reglas heurísticas (`src/lib/insights.ts`); la UI está desacoplada del origen, pensada para conectar en el futuro un endpoint `/insights` con LLM en el backend y baselines por empleado.
 - **Selector de periodo:** controles nativos de fecha y hora local, desde/hasta, con presets (Hoy, Ayer, 7 días). Las consultas se envían en UTC; los periodos incompletos o invertidos no se pueden cargar.
-- **Plano real:** geometría del local de ~152,75 m² (planta alargada de ~28 × 5,6 m) con sus estancias reales: atención al público, rebotica, oficina, distribuidor, office, almacén, aseo y patio, más el muro perimetral y la entrada. Zonas definidas en metros en `src/config.ts` — afinar límites al medir con cinta métrica. Eje X = profundidad desde la fachada; eje Y = anchura.
+- **Plano de la farmacia:** planta aproximada de 28 × 5,86 m con las zonas configuradas: atención al público, rebotica, oficina y almacén, más el perímetro y la entrada. Zonas definidas en metros en `src/config.ts` — afinar límites al medir con cinta métrica. Eje X = profundidad desde la fachada; eje Y = anchura.
 
 ## Estructura
 
@@ -65,7 +65,7 @@ src/
 ## Decisiones técnicas
 
 - **SVG, no Leaflet ni canvas:** coordenadas locales en metros directamente de la trilateración; con ≤50 tags el SVG rinde de sobra y simplifica hover, tooltips y accesibilidad.
-- **Escala:** 64 px/m; los límites del plano se calculan automáticamente desde los anchors que devuelve `/anchors`, así que al cambiar la planta solo hay que actualizar la BD y las zonas.
+- **Escala:** «Ajustar plano» muestra el conjunto; «Ver detalle» usa 64 px/m y permite desplazarse con barras o flechas del teclado. Las etiquetas y la selección mantienen un tamaño legible. La farmacia usa la geometría de `src/config.ts`; el área de prueba calcula sus límites desde `/anchors`.
 - **Heatmap como rects SVG:** los bins de 0,5 m llegan ya agregados del backend; para plantas pequeñas son <500 rectángulos, más simple que un canvas y con el mismo sistema de coordenadas.
 - **Sin librería de mapas ni de gráficas:** cero dependencias pesadas; solo React, Zustand y Tailwind 4.
 
