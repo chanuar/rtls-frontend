@@ -135,8 +135,8 @@ input[type='time'] { min-width: 0; }
   .header-navigation { flex: none; width: 100%; justify-content: space-between; }
   .connection-badge { max-width: 100%; font-size: 10px; }
   .workspace { flex-direction: column; }
-  .main-content { order: 0; overflow: visible; padding: 20px; }
-  .sidebar { order: 1; width: auto; overflow: visible; border-right: 0; border-top: 1px solid var(--color-line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .main-content { overflow: visible; padding: 20px; }
+  .sidebar { width: auto; overflow: visible; border-right: 0; border-bottom: 1px solid var(--color-line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; padding: 16px; }
   .sidebar-heading, .sidebar-footnote { grid-column: 1 / -1; }
   .map-card { min-height: 380px; }
 }
@@ -151,7 +151,7 @@ input[type='time'] { min-width: 0; }
   .overview small { font-size: 10px; }
   .map-heading { flex-wrap: wrap; padding: 14px; }
   .map-legend { gap: 12px; padding: 12px; }
-  .sidebar { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .sidebar { grid-template-columns: minmax(0, 1fr); }
   .replay-controls { gap: 8px; padding: 12px; }
 }
 
