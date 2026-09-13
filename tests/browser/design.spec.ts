@@ -141,6 +141,19 @@ test('history summary identifies the local period and observed coverage without 
   await expect(summary).toContainText('Desde pendiente')
 })
 
+test('heatmap scale reports each response maximum and distinguishes an empty layer', async ({ page }) => {
+  await openApp(page)
+  let count = 20
+  await page.route('**/heatmap?*', route => route.fulfill({ json: { cell: 0.5, bins: count ? [{ cx: 4, cy: 10, count }] : [] } }))
+  await page.getByRole('checkbox', { name: 'Mapa de calor del periodo' }).check()
+  const scale = page.getByRole('group', { name: 'Escala del mapa de calor' })
+  for (const max of [20, 200, 0]) {
+    count = max
+    await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
+    await expect(scale).toContainText(max ? `${max} muestras/celda · máximo del periodo` : 'Sin muestras en el mapa de calor')
+  }
+})
+
 test('theme selection remains usable when local storage is blocked', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -195,7 +208,7 @@ for (const theme of ['light', 'dark']) {
     await page.getByRole('button', { name: 'Cargar jornada', exact: true }).click()
     await page.getByRole('checkbox').check()
     await expect(page.getByRole('slider')).toBeVisible()
-    await expect(page.getByText('Más muestras')).toBeVisible()
+    await expect(page.getByRole('group', { name: 'Escala del mapa de calor' })).toContainText('20 muestras/celda')
     await audit('replay-heat')
     await page.getByRole('button', { name: 'Ver detalle' }).click()
     await audit('detail')

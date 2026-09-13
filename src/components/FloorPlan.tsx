@@ -2,6 +2,7 @@ import { memo, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } 
 import { ENTRANCE, FLOOR, TEST_LAYOUT, ZONES, qualityLevel, tagColor } from '../config'
 import type { Anchor, HeatBin, LivePosition, Sample } from '../types'
 import { isContinuous } from '../lib/trajectory'
+import { maxHeatCount } from '../lib/heatmap'
 import { ReplayPath } from './ReplayPath'
 
 const SCALE = 64 // px por metro
@@ -89,7 +90,7 @@ export function FloorPlan(p: Props) {
   }, [bounds])
 
   const maxHeat = useMemo(
-    () => Math.max(1, ...(p.heat?.bins.map((b) => b.count) ?? [1])),
+    () => maxHeatCount(p.heat),
     [p.heat],
   )
 

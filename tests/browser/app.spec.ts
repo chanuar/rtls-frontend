@@ -128,7 +128,7 @@ test('loading history from live announces success and opens the existing result 
   await expect(confirmation).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Posiciones actuales' })).toBeVisible()
   await page.getByRole('checkbox', { name: 'Mapa de calor del periodo' }).check()
-  await expect(page.getByText('Más muestras')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Escala del mapa de calor' })).toContainText('Sin muestras')
   await expect(confirmation).toBeVisible()
   const open = page.getByRole('button', { name: 'Ver histórico', exact: true })
   await open.focus()

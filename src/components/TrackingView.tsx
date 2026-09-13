@@ -5,6 +5,7 @@ import { FloorPlan } from './FloorPlan'
 import { LiveInfo } from './Stats'
 import { ReplayBar, useReplay } from './Replay'
 import { fmtDuration } from '../lib/trajectory'
+import { maxHeatCount } from '../lib/heatmap'
 import type { Period } from './PeriodPicker'
 import type { TagInfo } from '../types'
 import type { Heatmap, Mode, Page, Sample } from '../types'
@@ -140,6 +141,7 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
   const [detail, setDetail] = useState(false)
   const stage = useRef<HTMLDivElement>(null)
   const hint = useId()
+  const maxHeat = useMemo(() => maxHeatCount(heat), [heat])
   const canCenter = useStore(s => mode === 'live' && !!(s.selectedTag && s.live[s.selectedTag]))
   function centerSelection() {
     stage.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
@@ -161,7 +163,10 @@ function MapCard({ mode, loading, heat, children, emptyState }: {
     </div>
     {emptyState}
     <div className="map-legend"><span><i className="legend-anchor" /> Anchor fijo</span><span><i className="legend-tag" /> Tag móvil</span><span><i className="legend-stale" /> Sin actualizar</span><span className="legend-scale">Cuadrícula · 1 m</span>
-      {heat && <span>Menos <i className="heat-scale" /> Más muestras</span>}
+      {heat && <span className="heat-legend" role="group" aria-label="Escala del mapa de calor">
+        {maxHeat > 0 ? <>0 <i className="heat-scale" aria-hidden="true" /> {maxHeat.toLocaleString('es-ES')} muestras/celda · máximo del periodo</>
+          : 'Sin muestras en el mapa de calor'}
+      </span>}
     </div>
   </div>
 }
